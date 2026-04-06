@@ -60,21 +60,27 @@ module.exports = async function handler(req, res) {
   try {
     let content = [];
     
-    // 이미지 처리 로직
+    // 이미지 처리 로직 (확장자 유연성 확보)
     if (imageUrl) {
       const base64Image = await getBase64FromUrl(imageUrl);
+      const isPng = imageUrl.toLowerCase().includes('.png');
+      const mediaType = isPng ? "image/png" : "image/jpeg";
+      
       content.push({
         type: "image",
-        source: { type: "base64", media_type: "image/jpeg", data: base64Image },
+        source: { type: "base64", media_type: mediaType, data: base64Image },
       });
       content.push({ type: "text", text: "이 이미지의 프로모션 정보를 분석해줘." });
     } else {
       // 텍스트 처리 로직 (혹시 utterance 자체가 이미지 URL인 경우 대응)
       if (utterance.startsWith('http')) {
         const base64Image = await getBase64FromUrl(utterance);
+        const isPng = utterance.toLowerCase().includes('.png');
+        const mediaType = isPng ? "image/png" : "image/jpeg";
+        
         content.push({
           type: "image",
-          source: { type: "base64", media_type: "image/jpeg", data: base64Image },
+          source: { type: "base64", media_type: mediaType, data: base64Image },
         });
         content.push({ type: "text", text: "이 이미지의 프로모션 정보를 분석해줘." });
       } else {
@@ -93,7 +99,15 @@ module.exports = async function handler(req, res) {
 
     const responseText = message.content[0].text;
     const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-    const promotions = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
+    
+    // AI 환각 방어를 위한 파싱 로직 강화
+    let promotions = [];
+    try {
+      promotions = JSON.parse(jsonMatch ? jsonMatch[0] : responseText);
+    } catch (parseErr) {
+      console.error("JSON 파싱 에러:", responseText);
+      return res.json(kakaoResponse("AI가 프로모션 정보를 정확히 읽지 못했습니다. 이미지가 너무 복잡하거나 글자가 잘 안 보일 수 있습니다."));
+    }
 
     const results = { saved: [], updated: [], skipped: [] };
 
@@ -171,7 +185,11 @@ async function getBase64FromUrl(url) {
 
 // 요약 출력 포맷 (진행/종료 상태 및 국가/화폐 반영)
 function formatSummary(p) {
-  const today = new Date().toISOString().split('T')[0];
+  // 타임존을 태국/인도네시아(UTC+7 방콕 기준)로 맞춰서 정확한 '오늘' 날짜 구하기
+  const todayStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
+  const tzDate = new Date(todayStr);
+  const today = `${tzDate.getFullYear()}-${String(tzDate.getMonth() + 1).padStart(2, '0')}-${String(tzDate.getDate()).padStart(2, '0')}`;
+
   const isExpired = p.end_date && p.end_date < today;
   const statusLabel = isExpired ? "🔴 [종료]" : "🟢 [진행중]";
 
