@@ -61,11 +61,17 @@ module.exports = async function handler(req, res) {
 
   try {
     // Claude API로 파싱
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: utterance }],
+    // const message = await anthropic.messages.create({
+    //  model: "claude-sonnet-4-20250514",
+    //  max_tokens: 2000,
+    // system: SYSTEM_PROMPT,
+    // messages: [{ role: "user", content: utterance }],
+    // 수정 코드 (Haiku 모델로 변경)
+       const message = await anthropic.messages.create({
+       model: "claude-3-5-haiku-latest", // 2026년 기준 가장 빠른 모델
+       max_tokens: 1000, // 토큰 수를 줄이면 더 빨라집니다
+       system: SYSTEM_PROMPT,
+       messages: [{ role: "user", content: utterance }],
     });
 
     const responseText = message.content[0].text;
