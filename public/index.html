@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>타이골프프로모션</title>
+<title>동남아 골프프로모션</title>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
@@ -54,7 +54,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 
   .logo {
@@ -75,7 +75,34 @@
     border-radius: 20px;
   }
 
-  /* ===== FILTERS ===== */
+  /* ===== COUNTRY TABS (신규) ===== */
+  .country-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .country-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text3);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .country-btn.active {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+  }
+
+  /* ===== REGION FILTERS ===== */
   .filter-scroll {
     display: flex;
     gap: 6px;
@@ -246,48 +273,14 @@
     text-decoration: none;
   }
 
-  /* ===== EMPTY STATE ===== */
-  .empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text3);
-  }
+  /* ===== EMPTY & LOADING & SKELETON ===== */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
   .empty-icon { font-size: 40px; margin-bottom: 12px; }
   .empty-title { font-size: 16px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
   .empty-desc { font-size: 13px; line-height: 1.6; }
 
-  /* ===== LOADING ===== */
-  .loading {
-    text-align: center;
-    padding: 80px 20px;
-  }
-  .spinner {
-    width: 32px; height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 14px; color: var(--text3); }
-
-  /* ===== SKELETON ===== */
-  .skeleton-card {
-    background: var(--card);
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 10px;
-    border: 1px solid var(--border);
-  }
-  .sk-line {
-    height: 14px;
-    background: linear-gradient(90deg, #f0efe9 25%, #e8e7e1 50%, #f0efe9 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 6px;
-    margin-bottom: 10px;
-  }
+  .skeleton-card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .sk-line { height: 14px; background: linear-gradient(90deg, #f0efe9 25%, #e8e7e1 50%, #f0efe9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; margin-bottom: 10px; }
   .sk-line:nth-child(1) { width: 55%; height: 18px; }
   .sk-line:nth-child(2) { width: 35%; }
   .sk-line:nth-child(3) { width: 40%; height: 24px; }
@@ -295,25 +288,11 @@
   .sk-line:last-child { margin-bottom: 0; }
   @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
-  /* ===== REFRESH BUTTON ===== */
   .refresh-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.15s;
-    z-index: 100;
+    position: fixed; bottom: 20px; right: 20px; width: 48px; height: 48px; border-radius: 50%;
+    background: var(--accent); color: #fff; border: none; font-size: 20px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(27, 94, 32, 0.3); display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s; z-index: 100;
   }
   .refresh-btn:active { transform: scale(0.9); }
   .refresh-btn svg { width: 22px; height: 22px; fill: #fff; }
@@ -324,9 +303,15 @@
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div class="logo">타이골프 <span>프로모션</span></div>
+      <div class="logo">글로벌골프 <span>프로모션</span></div>
       <div class="count-badge" id="countBadge">불러오는 중...</div>
     </div>
+    
+    <div class="country-tabs">
+      <button class="country-btn active" data-country="태국" onclick="setCountry('태국')">🇹🇭 태국</button>
+      <button class="country-btn" data-country="인도네시아" onclick="setCountry('인도네시아')">🇮🇩 인도네시아</button>
+    </div>
+
     <div class="filter-scroll" id="filters"></div>
   </div>
 
@@ -343,7 +328,6 @@
   <div id="content">
     <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
     <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
-    <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
   </div>
 </div>
 
@@ -353,31 +337,30 @@
 
 <script>
 // ============================================================
-// ⚠️ 아래 두 줄을 본인의 Supabase 정보로 변경하세요!
+// Supabase 설정
 // ============================================================
 const SUPABASE_URL = "https://lkdhclaoxqgrlrjmsglm.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrZGhjbGFveHFncmxyam1zZ2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzE5MDMsImV4cCI6MjA5MTA0NzkwM30.rKsKu_LvYT1QP2QUilrvBT2AwU0TzwK9Aknk6eXEcoE";
-// ============================================================
-// SUPABASE_URL: Supabase > Project Settings > API > Project URL
-// SUPABASE_ANON_KEY: Supabase > Project Settings > API > anon public
-// ⚠️ anon (공개키)를 넣으세요. service_role (비밀키) 아닙니다!
-// ============================================================
 
 let allData = [];
+let activeCountry = "태국"; // 기본 국가 설정
 let activeRegion = "전체";
 
+// 태국/인도네시아(방콕) 타임존 기준 오늘 자정 시간 구하기 (종료일 계산용)
+function getBangkokMidnight() {
+  const bkkStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Bangkok" });
+  const bkkDate = new Date(bkkStr);
+  bkkDate.setHours(0, 0, 0, 0);
+  return bkkDate;
+}
+
+// 데이터 불러오기
 async function loadData() {
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/promotions?status=eq.active&order=created_at.desc`,
-      {
-        headers: {
-          "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-      }
+      { headers: { "apikey": SUPABASE_ANON_KEY, "Authorization": `Bearer ${SUPABASE_ANON_KEY}` } }
     );
-
     if (!res.ok) throw new Error("DB 연결 실패");
 
     allData = await res.json();
@@ -385,22 +368,30 @@ async function loadData() {
     render();
   } catch (err) {
     console.error(err);
-    document.getElementById("content").innerHTML = `
-      <div class="empty">
-        <div class="empty-icon">&#x26A0;&#xFE0F;</div>
-        <div class="empty-title">연결할 수 없습니다</div>
-        <div class="empty-desc">
-          Supabase 설정을 확인해주세요.<br>
-          SUPABASE_URL과 SUPABASE_ANON_KEY가<br>
-          올바르게 입력되었는지 확인하세요.
-        </div>
-      </div>`;
-    document.getElementById("countBadge").textContent = "연결 오류";
+    document.getElementById("content").innerHTML = `<div class="empty"><div class="empty-icon">&#x26A0;&#xFE0F;</div><div class="empty-title">연결 오류</div></div>`;
   }
 }
 
+// 국가 선택 액션
+function setCountry(country) {
+  activeCountry = country;
+  activeRegion = "전체"; // 국가 변경 시 지역 필터 초기화
+  
+  // 버튼 스타일 변경
+  document.querySelectorAll('.country-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.country === country);
+  });
+  
+  buildFilters();
+  render();
+}
+
+// 지역 필터 생성 (선택된 국가에 속한 지역만 추출)
 function buildFilters() {
-  const regions = ["전체", ...new Set(allData.map(d => d.region).filter(Boolean))];
+  // DB에 country 값이 비어있는 과거 데이터는 '태국'으로 간주
+  const countryData = allData.filter(d => (d.country || '태국') === activeCountry);
+  const regions = ["전체", ...new Set(countryData.map(d => d.region).filter(Boolean))];
+  
   const el = document.getElementById("filters");
   el.innerHTML = "";
   regions.forEach(r => {
@@ -423,17 +414,25 @@ function getMinPrice(d) {
   return Math.min(...vals.map(Number));
 }
 
+// D-Day 계산 (타임존 적용)
 function getDaysLeft(d) {
   if (!d.end_date) return Infinity;
-  const diff = (new Date(d.end_date) - new Date()) / (1000 * 60 * 60 * 24);
+  const endDate = new Date(d.end_date + "T00:00:00");
+  const today = getBangkokMidnight();
+  const diff = (endDate - today) / (1000 * 60 * 60 * 24);
   return Math.ceil(diff);
 }
 
 function render() {
-  let items = activeRegion === "전체"
-    ? [...allData]
-    : allData.filter(d => d.region === activeRegion);
+  // 1. 국가 필터 적용
+  let items = allData.filter(d => (d.country || '태국') === activeCountry);
 
+  // 2. 지역 필터 적용
+  if (activeRegion !== "전체") {
+    items = items.filter(d => d.region === activeRegion);
+  }
+
+  // 3. 정렬 적용
   const sort = document.getElementById("sortSelect").value;
   if (sort === "price_low") items.sort((a, b) => getMinPrice(a) - getMinPrice(b));
   else if (sort === "price_high") items.sort((a, b) => getMinPrice(b) - getMinPrice(a));
@@ -446,11 +445,7 @@ function render() {
       <div class="empty">
         <div class="empty-icon">&#x1F3CC;&#xFE0F;</div>
         <div class="empty-title">프로모션이 없습니다</div>
-        <div class="empty-desc">
-          ${activeRegion === "전체"
-            ? "아직 등록된 프로모션이 없어요.<br>카카오톡 챗봇에서 등록해주세요!"
-            : `${activeRegion} 지역에 진행 중인 프로모션이 없습니다.`}
-        </div>
+        <div class="empty-desc">해당 조건에 맞는 프로모션이 아직 없습니다.</div>
       </div>`;
     return;
   }
@@ -459,67 +454,60 @@ function render() {
 }
 
 function renderCard(d) {
-  // 배지
-  const badgeClass = d.price_type === "all_inclusive" ? "type-all"
-    : d.price_type === "package" ? "type-pkg" : "type-green";
-  const badgeText = d.price_type === "all_inclusive" ? "올인클루시브"
-    : d.price_type === "package" ? "패키지" : "그린피만";
+  const badgeClass = d.price_type === "all_inclusive" ? "type-all" : d.price_type === "package" ? "type-pkg" : "type-green";
+  const badgeText = d.price_type === "all_inclusive" ? "올인클루시브" : d.price_type === "package" ? "패키지" : "그린피만";
 
-  // 가격
-  const curr = d.currency === "KRW" ? "원" : "바트";
-  const labelMap = {
-    default: "", weekday: "주중", weekend: "주말", morning: "오전",
-    afternoon: "오후", golfer: "골퍼", non_golfer: "논골퍼",
-    wednesday: "수요일", weekend_afternoon: "주말오후"
-  };
+  // 화폐 단위 설정 (루피아 추가)
+  let curr = "바트";
+  if (d.currency === "KRW") curr = "원";
+  if (d.currency === "IDR") curr = "루피아";
+
+  const labelMap = { default: "", weekday: "주중", weekend: "주말", morning: "오전", afternoon: "오후", golfer: "골퍼", non_golfer: "논골퍼", wednesday: "수요일", weekend_afternoon: "주말오후" };
 
   const entries = Object.entries(d.green_fee || {});
   let priceHTML = "";
   if (entries.length === 1) {
     const [k, v] = entries[0];
     const label = labelMap[k] || k;
-    priceHTML = `<span class="price-main">${Number(v).toLocaleString()}</span>
-      <span class="price-unit">${curr}${label ? " (" + label + ")" : ""}</span>`;
-  } else {
+    priceHTML = `<span class="price-main">${Number(v).toLocaleString()}</span> <span class="price-unit">${curr}${label ? " (" + label + ")" : ""}</span>`;
+  } else if (entries.length > 0) {
     priceHTML = entries.map(([k, v], i) => {
       const label = labelMap[k] || k;
-      return `${i > 0 ? '<span class="price-sep"> / </span>' : ""}
-        <span class="price-main" style="font-size:${entries.length > 2 ? 17 : 20}px">
-          ${Number(v).toLocaleString()}</span>
-        <span class="price-unit">${curr}${label ? "(" + label + ")" : ""}</span>`;
+      return `${i > 0 ? '<span class="price-sep"> / </span>' : ""}<span class="price-main" style="font-size:${entries.length > 2 ? 17 : 20}px">${Number(v).toLocaleString()}</span><span class="price-unit">${curr}${label ? "(" + label + ")" : ""}</span>`;
     }).join("");
+  } else {
+    priceHTML = `<span class="price-main">가격 미정</span>`;
   }
 
-  // 태그
   const tags = [];
   if (d.includes_caddy) tags.push('<span class="tag tag-included">캐디 포함</span>');
   if (d.includes_cart) tags.push('<span class="tag tag-included">카트 포함</span>');
   if (d.includes_hotel) tags.push('<span class="tag tag-included">숙박 포함</span>');
   if (d.includes_meal) tags.push('<span class="tag tag-included">식사 포함</span>');
-  if (d.caddy_fee) tags.push(`<span class="tag tag-extra">캐디 ${d.caddy_fee}바트 별도</span>`);
-  if (d.cart_fee) tags.push(`<span class="tag tag-extra">카트 ${d.cart_fee}바트 별도</span>`);
+  
+  // 루피아 단위는 화폐가 크므로 단위 표시 통일
+  const extraCurr = d.currency === "IDR" ? "루피아" : (d.currency === "KRW" ? "원" : "바트");
+  if (d.caddy_fee) tags.push(`<span class="tag tag-extra">캐디 ${Number(d.caddy_fee).toLocaleString()}${extraCurr} 별도</span>`);
+  if (d.cart_fee) tags.push(`<span class="tag tag-extra">카트 ${Number(d.cart_fee).toLocaleString()}${extraCurr} 별도</span>`);
 
-  // 날짜
   const startStr = d.start_date ? formatDate(d.start_date) : "미정";
   const endStr = d.end_date ? formatDate(d.end_date) : "상시";
   const daysLeft = getDaysLeft(d);
+  
   let daysTag = "";
-  if (daysLeft <= 0) daysTag = ' <span style="color:var(--red);font-weight:600;">종료</span>';
-  else if (daysLeft <= 7) daysTag = ` <span style="color:var(--red);font-weight:600;">${daysLeft}일 남음</span>`;
+  if (daysLeft < 0) daysTag = ' <span style="color:var(--red);font-weight:600;">종료됨</span>';
+  else if (daysLeft === 0) daysTag = ' <span style="color:var(--red);font-weight:600;">오늘 종료</span>';
+  else if (daysLeft <= 7) daysTag = ` <span style="color:var(--amber);font-weight:600;">마감 ${daysLeft}일 전</span>`;
 
-  // 연락처
   let contactHTML = "";
-  if (d.contact_kakao) {
-    contactHTML = `<span class="contact-link">카톡 ${d.contact_kakao}</span>`;
-  } else if (d.contact_phone) {
-    contactHTML = `<a href="tel:${d.contact_phone.replace(/[^0-9+]/g, "")}" class="contact-link">${d.contact_phone}</a>`;
-  }
+  if (d.contact_kakao) contactHTML = `<span class="contact-link">카톡 ${d.contact_kakao}</span>`;
+  else if (d.contact_phone) contactHTML = `<a href="tel:${d.contact_phone.replace(/[^0-9+]/g, "")}" class="contact-link">${d.contact_phone}</a>`;
 
   return `<div class="card">
     <div class="card-header">
       <div>
         <div class="course-name">${escHtml(d.golf_course)}</div>
-        <div class="course-sub">${escHtml(d.golf_course_en || "")}${d.golf_course_en && d.region ? " · " : ""}${escHtml(d.region || "")}</div>
+        <div class="course-sub">[${d.country || '태국'}] ${escHtml(d.golf_course_en || "")}${d.golf_course_en && d.region ? " · " : ""}${escHtml(d.region || "")}</div>
       </div>
       <span class="type-badge ${badgeClass}">${badgeText}</span>
     </div>
@@ -543,7 +531,6 @@ function escHtml(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// 최초 로드
 loadData();
 </script>
 
