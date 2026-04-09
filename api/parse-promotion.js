@@ -116,8 +116,16 @@ var SYSTEM_PROMPT = [
   "   예: 4인그룹 13000바트 -> green_fee: {\"default\": 3250}, conditions: \"4인그룹 기준 (총 13,000바트)\"",
   "7. 부가 혜택(기념품, 모자, 우산, 음료 등)이 포함된 경우 conditions에 해당 내용을 요약하세요",
   "8. 샷건/티오프 시간이 명시된 경우 conditions에 포함하세요. 예: \"샷건 12시\"",
+"9. 하루짜리 이벤트: 특정 날짜 하루만 진행되는 경우 start_date와 end_date를 동일하게 설정하세요.",
+  "   예: '4월 12일 대회' -> start_date: '2026-04-12', end_date: '2026-04-12'",
+  "10. 대회/토너먼트 감지: 샷건, 토너먼트, 대회, 상금, 시상, 마라톤, 참가비 등의 단어가 있으면",
+  "    conditions 맨 앞에 '[대회]' 태그를 붙이세요.",
+  "    예: conditions: '[대회] 4인그룹 기준 (총 13,000바트). 샷건 12시'",
+  "11. 시간대별 가격: 오전/오후 가격이 다른 경우 green_fee 키를 다음처럼 구분하세요.",
+  "    - weekday_morning, weekday_afternoon, weekend_morning, weekend_afternoon",
+  "    - 구분 시간이 명시되어 있으면 conditions에 '12시 기준 오전/오후 구분' 같이 명시하세요.",
+  "    - 오전/오후 가격이 동일하면 나누지 말고 weekday, weekend로 통합하세요.",
 ].join("\n");
-
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
