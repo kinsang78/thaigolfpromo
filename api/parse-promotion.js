@@ -7,19 +7,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const SYSTEM_PROMPT = `당신은 태국 골프장 프로모션 메시지 파싱 전문가입니다.
+const SYSTEM_PROMPT = `당신은 동남아시아 골프장 프로모션 메시지 파싱 전문가입니다.
 사용자가 보내는 메시지에서 아래 정보를 JSON 배열로 추출하세요.
 
 각 프로모션마다 다음 형식을 지키세요:
 {
   "golf_course": "골프장명 (한글)",
   "golf_course_en": "골프장명 (영문)",
-  "region": "방콕|파타야|치앙마이|카오야이|후아힌|기타",
+  "country": "태국 또는 인도네시아",
+  "region": "세부 지역명",
   "start_date": "YYYY-MM-DD 또는 null",
   "end_date": "YYYY-MM-DD 또는 null",
   "price_type": "green_fee_only | all_inclusive | package",
   "green_fee": { "weekday": 2000, "weekend": 3000 },
-  "currency": "THB 또는 KRW",
+  "currency": "THB 또는 KRW 또는 IDR",
   "includes_caddy": true/false,
   "includes_cart": true/false,
   "includes_hotel": true/false,
@@ -36,8 +37,14 @@ const SYSTEM_PROMPT = `당신은 태국 골프장 프로모션 메시지 파싱 
 2. (그린피,캐디,카트) 포함이면 "all_inclusive"
 3. 캐디/카트가 "별도" 또는 불포함이면 "green_fee_only"
 4. 숙박/식사 포함이면 "package"
-5. "만원/원" 단위는 KRW, 그 외는 THB로 처리하세요.
-6. 여러 골프장이 한 메시지에 있으면 배열로 모두 추출하세요.`;
+5. "만원/원" 단위는 KRW, "바트" 단위는 THB, "루피아/IDR" 단위는 IDR
+6. 여러 골프장이 한 메시지에 있으면 배열로 모두 추출하세요.
+7. country 판별:
+   - 바트(THB) 사용, 방콕/파타야/치앙마이/카오야이/후아힌/아유타야 등 → "태국"
+   - 루피아(IDR) 사용, 자카르타/보고르/발리/찌까랑/센둥/탕그랑 등 → "인도네시아"
+   - 판별 불가 시 문맥에서 추정
+8. region은 구체적 지역명만 (예: "방콕", "파타야", "자카르타", "보고르")
+   "태국 방콕" 같이 국가+지역을 합치지 마세요. 국가는 country에 넣으세요.`;
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -56,9 +63,7 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // === 종료된 프로모션 자동 삭제 ===
     await cleanupExpired();
-
     console.log("=== 파싱 시작 ===");
 
     var message = await anthropic.messages.create({
@@ -123,26 +128,19 @@ module.exports = async function handler(req, res) {
   }
 };
 
-// === 종료된 프로모션 자동 삭제 ===
 async function cleanupExpired() {
   var today = new Date().toISOString().split("T")[0];
-  var result = await supabase
-    .from("promotions")
-    .delete()
-    .eq("status", "active")
-    .lt("end_date", today)
-    .not("end_date", "is", null);
-  if (result.error) {
-    console.error("만료 정리 에러:", result.error.message);
-  }
+  var result = await supabase.from("promotions").delete()
+    .eq("status", "active").lt("end_date", today).not("end_date", "is", null);
+  if (result.error) console.error("만료 정리 에러:", result.error.message);
 }
 
-// === 중복 확인 + 저장 ===
 async function saveWithDedup(promo, rawMessage, userId) {
   var courseName = promo.golf_course;
   if (!courseName) return { action: "skipped" };
 
-  var searchResult = await supabase.from("promotions").select("*").eq("status", "active").ilike("golf_course", "%" + courseName + "%");
+  var searchResult = await supabase.from("promotions").select("*")
+    .eq("status", "active").ilike("golf_course", "%" + courseName + "%");
   if (searchResult.error) return await insertNew(promo, rawMessage, userId);
 
   var existing = searchResult.data;
@@ -153,13 +151,12 @@ async function saveWithDedup(promo, rawMessage, userId) {
 
   overlapping.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
   var best = overlapping[0];
-  var newScore = calcDetailScore(promo);
-  var existingScore = calcDetailScore(best);
 
-  if (newScore > existingScore) {
+  if (calcDetailScore(promo) > calcDetailScore(best)) {
     var updateResult = await supabase.from("promotions").update({
       golf_course: promo.golf_course,
       golf_course_en: promo.golf_course_en || best.golf_course_en,
+      country: promo.country || best.country,
       region: promo.region || best.region,
       start_date: promo.start_date || best.start_date,
       end_date: promo.end_date || best.end_date,
@@ -188,6 +185,7 @@ async function insertNew(promo, rawMessage, userId) {
   var result = await supabase.from("promotions").insert({
     golf_course: promo.golf_course,
     golf_course_en: promo.golf_course_en || null,
+    country: promo.country || null,
     region: promo.region || null,
     start_date: promo.start_date || null,
     end_date: promo.end_date || null,
@@ -225,12 +223,12 @@ function calcDetailScore(p) {
   var score = 0;
   if (p.golf_course) score += 1;
   if (p.golf_course_en) score += 1;
+  if (p.country) score += 1;
   if (p.region) score += 1;
   if (p.start_date) score += 1;
   if (p.end_date) score += 1;
   if (p.green_fee) score += Object.keys(p.green_fee).length * 2;
   if (p.price_type) score += 1;
-  if (p.currency) score += 1;
   if (p.includes_caddy === true || p.includes_caddy === false) score += 1;
   if (p.includes_cart === true || p.includes_cart === false) score += 1;
   if (p.caddy_fee) score += 2;
@@ -243,13 +241,14 @@ function calcDetailScore(p) {
 }
 
 function formatSummary(p) {
-  var curr = p.currency === "KRW" ? "원" : "바트";
+  var curr = p.currency === "KRW" ? "원" : p.currency === "IDR" ? "루피아" : "바트";
   var typeLabel = { all_inclusive: "올인클루시브", package: "패키지", green_fee_only: "그린피만" }[p.price_type] || "";
   var prices = p.green_fee ? Object.entries(p.green_fee).map(function(e) {
-    var label = { default:"", weekday:"주중 ", weekend:"주말 ", morning:"오전 ", afternoon:"오후 ", golfer:"골퍼 ", non_golfer:"논골퍼 " }[e[0]] || "";
+    var label = { default:"", weekday:"주중 ", weekend:"주말 ", morning:"오전 ", afternoon:"오후 " }[e[0]] || "";
     return label + Number(e[1]).toLocaleString() + curr;
   }).join(" / ") : "";
   var text = p.golf_course + (p.region ? " (" + p.region + ")" : "");
+  if (p.country) text += " [" + p.country + "]";
   text += "\n" + (p.start_date || "미정") + " ~ " + (p.end_date || "미정");
   text += "\n" + prices + " [" + typeLabel + "]";
   if (p.conditions) text += "\n" + p.conditions;
