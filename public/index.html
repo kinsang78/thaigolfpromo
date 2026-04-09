@@ -130,6 +130,7 @@
       <option value="price_low">가격 낮은순</option>
       <option value="price_high">가격 높은순</option>
       <option value="ending">마감 임박순</option>
+      <option value="nearby">가까운 순 📍</option>
     </select>
   </div>
 
@@ -292,6 +293,15 @@ function render() {
   if (sort === "price_low") items.sort(function(a, b) { return getMinPrice(a) - getMinPrice(b); });
   else if (sort === "price_high") items.sort(function(a, b) { return getMinPrice(b) - getMinPrice(a); });
   else if (sort === "ending") items.sort(function(a, b) { return getDaysLeft(a) - getDaysLeft(b); });
+  else if (sort === "nearby") {
+    if (!userLat) {
+      getUserLocation();
+      alert("위치 권한을 허용해주세요. 허용 후 다시 선택해주세요.");
+      document.getElementById("sortSelect").value = "newest";
+      return;
+    }
+    items.sort(function(a, b) { return getDistanceKm(a) - getDistanceKm(b); });
+  }
 
   // 그룹핑
   var groups = groupByCourse(items);
@@ -403,7 +413,12 @@ function renderPromoItem(d) {
   html += '<div class="price-row">' + priceHTML + '</div>';
   if (tags.length) html += '<div class="tags">' + tags.join("") + '</div>';
   if (d.conditions) html += '<div class="cond-text">' + escHtml(d.conditions) + '</div>';
-  html += '<div class="promo-footer"><span class="date-text">' + startStr + ' ~ ' + endStr + '</span>' + contactHTML + '</div>';
+  var distText = "";
+  if (userLat && d.latitude) {
+    var km = calcDistance(userLat, userLng, d.latitude, d.longitude);
+    distText = ' · ' + Math.round(km) + 'km';
+  }
+  html += '<div class="promo-footer"><span class="date-text">' + startStr + ' ~ ' + endStr + distText + '</span>' + contactHTML + '</div>';
   html += '</div>';
   return html;
 }
@@ -424,7 +439,45 @@ function escHtml(s) {
   if (!s) return "";
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-
+// === 위치 기반 정렬 ===
+var userLat = null;
+var userLng = null;
+ 
+function getUserLocation() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      console.log("위치 확인:", userLat, userLng);
+    },
+    function(err) {
+      console.log("위치 권한 거부 또는 불가:", err.message);
+    },
+    { enableHighAccuracy: false, timeout: 5000 }
+  );
+}
+ 
+function calcDistance(lat1, lng1, lat2, lng2) {
+  if (!lat1 || !lng1 || !lat2 || !lng2) return Infinity;
+  var R = 6371;
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLng = (lng2 - lng1) * Math.PI / 180;
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+ 
+function getDistanceKm(d) {
+  if (!userLat || !userLng) return Infinity;
+  return calcDistance(userLat, userLng, d.latitude, d.longitude);
+}
+ 
+getUserLocation();
+ 
+loadData();
+</script>
 loadData();
 </script>
 </body>
