@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>타이인니골프프로모션</title>
+<title>타이골프프로모션</title>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -29,6 +29,13 @@
   .search-input::placeholder{color:var(--text3)}
   .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text3)}
 
+  /* 국가 탭 */
+  .country-tabs{display:flex;gap:8px;margin-bottom:10px}
+  .country-tab{flex:1;font-family:inherit;font-size:14px;font-weight:600;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;text-align:center;transition:all 0.15s}
+  .country-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .country-tab .flag{margin-right:4px}
+
+  /* 지역 필터 */
   .filter-scroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:10px}
   .filter-scroll::-webkit-scrollbar{display:none}
   .filter-btn{flex-shrink:0;font-family:inherit;font-size:13px;font-weight:500;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
@@ -38,7 +45,6 @@
   .sort-bar span{font-size:12px;color:var(--text3)}
   .sort-select{font-family:inherit;font-size:12px;color:var(--text2);background:transparent;border:none;cursor:pointer}
 
-  /* 카드 */
   .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px;border:1px solid var(--border);transition:transform 0.1s}
   .card:active{transform:scale(0.985)}
   .card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
@@ -50,8 +56,6 @@
   .type-all{background:var(--green-bg);color:var(--green)}
   .type-green{background:var(--amber-bg);color:var(--amber)}
   .type-pkg{background:var(--purple-bg);color:var(--purple)}
-
-  /* 상태 배지 */
   .status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px}
   .status-upcoming{background:var(--blue-bg);color:var(--blue)}
   .status-active{background:var(--green-bg);color:var(--green)}
@@ -84,8 +88,6 @@
   .refresh-btn{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(27,94,32,0.3);display:flex;align-items:center;justify-content:center;transition:transform 0.15s;z-index:100}
   .refresh-btn:active{transform:scale(0.9)}
   .refresh-btn svg{width:22px;height:22px;fill:#fff}
-
-  /* 검색 하이라이트 */
   mark{background:#FEF08A;color:var(--text);border-radius:2px;padding:0 1px}
 </style>
 </head>
@@ -103,6 +105,14 @@
       <input type="text" class="search-input" id="searchInput" placeholder="골프장 검색 (한글/영어)" oninput="render()">
     </div>
 
+    <!-- 국가 탭 -->
+    <div class="country-tabs" id="countryTabs">
+      <button class="country-tab active" onclick="setCountry('전체')"><span class="flag">&#x1F30F;</span>전체</button>
+      <button class="country-tab" onclick="setCountry('태국')"><span class="flag">&#x1F1F9;&#x1F1ED;</span>태국</button>
+      <button class="country-tab" onclick="setCountry('인도네시아')"><span class="flag">&#x1F1EE;&#x1F1E9;</span>인도네시아</button>
+    </div>
+
+    <!-- 지역 필터 -->
     <div class="filter-scroll" id="filters"></div>
   </div>
 
@@ -129,14 +139,31 @@
 
 <script>
 // ============================================================
-// Supabase 설정 — 본인 정보로 변경하세요
-// ============================================================
 var SUPABASE_URL = "https://lkdhclaoxqgrlrjmsglm.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrZGhjbGFveHFncmxyam1zZ2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzE5MDMsImV4cCI6MjA5MTA0NzkwM30.rKsKu_LvYT1QP2QUilrvBT2AwU0TzwK9Aknk6eXEcoE";
 // ============================================================
 
 var allData = [];
+var activeCountry = "전체";
 var activeRegion = "전체";
+
+function setCountry(c) {
+  activeCountry = c;
+  activeRegion = "전체";
+  document.querySelectorAll(".country-tab").forEach(function(btn) {
+    btn.classList.remove("active");
+  });
+  // 해당 버튼 활성화
+  var tabs = document.querySelectorAll(".country-tab");
+  for (var i = 0; i < tabs.length; i++) {
+    if (tabs[i].textContent.indexOf(c === "전체" ? "전체" : c) !== -1) {
+      tabs[i].classList.add("active");
+      break;
+    }
+  }
+  buildRegionFilters();
+  render();
+}
 
 async function loadData() {
   try {
@@ -147,14 +174,14 @@ async function loadData() {
     if (!res.ok) throw new Error("DB 연결 실패");
     allData = await res.json();
 
-    // 종료된 프로모션 필터링 (프론트에서도 한번 더)
+    // 종료된 프로모션 제외
     var today = new Date().toISOString().split("T")[0];
     allData = allData.filter(function(d) {
       if (!d.end_date) return true;
       return d.end_date >= today;
     });
 
-    buildFilters();
+    buildRegionFilters();
     render();
   } catch (err) {
     console.error(err);
@@ -166,15 +193,24 @@ async function loadData() {
   }
 }
 
-function buildFilters() {
+function getCountryData() {
+  if (activeCountry === "전체") return allData;
+  return allData.filter(function(d) { return d.country === activeCountry; });
+}
+
+function buildRegionFilters() {
+  var countryData = getCountryData();
   var regionSet = {};
-  allData.forEach(function(d) { if (d.region) regionSet[d.region] = true; });
+  countryData.forEach(function(d) { if (d.region) regionSet[d.region] = true; });
   var regions = ["전체"].concat(Object.keys(regionSet).sort());
+
   var el = document.getElementById("filters");
   el.innerHTML = "";
+  activeRegion = "전체";
+
   regions.forEach(function(r) {
     var b = document.createElement("button");
-    b.className = "filter-btn" + (r === activeRegion ? " active" : "");
+    b.className = "filter-btn" + (r === "전체" ? " active" : "");
     b.textContent = r;
     b.onclick = function() {
       activeRegion = r;
@@ -204,33 +240,26 @@ function getStatus(d) {
 
   if (d.start_date && d.start_date > todayStr) {
     var daysToStart = Math.ceil((new Date(d.start_date) - today) / 86400000);
-    return { type: "upcoming", label: daysToStart + "일 후 시작", css: "status-upcoming" };
+    return { label: daysToStart + "일 후 시작", css: "status-upcoming" };
   }
-
   var daysLeft = getDaysLeft(d);
-
   if (daysLeft <= 3 && daysLeft >= 0) {
-    return { type: "ending", label: daysLeft === 0 ? "오늘 마감" : daysLeft + "일 남음", css: "status-ending" };
+    return { label: daysLeft === 0 ? "오늘 마감" : daysLeft + "일 남음", css: "status-ending" };
   }
-
   if (daysLeft <= 7 && daysLeft > 3) {
-    return { type: "ending-soon", label: daysLeft + "일 남음", css: "status-ending" };
+    return { label: daysLeft + "일 남음", css: "status-ending" };
   }
-
-  return { type: "active", label: "진행 중", css: "status-active" };
+  return { label: "진행 중", css: "status-active" };
 }
 
 function render() {
   var searchQuery = document.getElementById("searchInput").value.trim().toLowerCase();
+  var items = getCountryData();
 
-  var items = allData;
-
-  // 지역 필터
   if (activeRegion !== "전체") {
     items = items.filter(function(d) { return d.region === activeRegion; });
   }
 
-  // 검색 필터
   if (searchQuery) {
     items = items.filter(function(d) {
       var name = (d.golf_course || "").toLowerCase();
@@ -239,7 +268,6 @@ function render() {
     });
   }
 
-  // 정렬
   var sort = document.getElementById("sortSelect").value;
   if (sort === "price_low") items.sort(function(a, b) { return getMinPrice(a) - getMinPrice(b); });
   else if (sort === "price_high") items.sort(function(a, b) { return getMinPrice(b) - getMinPrice(a); });
@@ -250,7 +278,7 @@ function render() {
   if (items.length === 0) {
     var emptyMsg = searchQuery
       ? '"' + escHtml(searchQuery) + '" 검색 결과가 없습니다.'
-      : (activeRegion === "전체" ? "등록된 프로모션이 없어요." : activeRegion + " 지역 프로모션이 없습니다.");
+      : "등록된 프로모션이 없어요.";
     document.getElementById("content").innerHTML =
       '<div class="empty"><div class="empty-icon">&#x1F3CC;&#xFE0F;</div>' +
       '<div class="empty-title">프로모션이 없습니다</div>' +
@@ -264,15 +292,11 @@ function render() {
 }
 
 function renderCard(d, searchQuery) {
-  // 상태
   var status = getStatus(d);
-
-  // 배지
   var badgeClass = d.price_type === "all_inclusive" ? "type-all" : d.price_type === "package" ? "type-pkg" : "type-green";
   var badgeText = d.price_type === "all_inclusive" ? "올인클루시브" : d.price_type === "package" ? "패키지" : "그린피만";
 
-  // 가격
-  var curr = d.currency === "KRW" ? "원" : "바트";
+  var curr = d.currency === "KRW" ? "원" : d.currency === "IDR" ? "루피아" : "바트";
   var labelMap = {default:"",weekday:"주중",weekend:"주말",morning:"오전",afternoon:"오후",golfer:"골퍼",non_golfer:"논골퍼",wednesday:"수요일",weekend_afternoon:"주말오후"};
   var entries = d.green_fee ? Object.entries(d.green_fee) : [];
 
@@ -293,7 +317,6 @@ function renderCard(d, searchQuery) {
     }).join("");
   }
 
-  // 태그
   var tags = [];
   if (d.includes_caddy) tags.push('<span class="tag tag-included">캐디 포함</span>');
   if (d.includes_cart) tags.push('<span class="tag tag-included">카트 포함</span>');
@@ -302,11 +325,9 @@ function renderCard(d, searchQuery) {
   if (d.caddy_fee) tags.push('<span class="tag tag-extra">캐디 ' + d.caddy_fee + '바트 별도</span>');
   if (d.cart_fee) tags.push('<span class="tag tag-extra">카트 ' + d.cart_fee + '바트 별도</span>');
 
-  // 날짜
   var startStr = d.start_date ? formatDate(d.start_date) : "미정";
   var endStr = d.end_date ? formatDate(d.end_date) : "상시";
 
-  // 연락처
   var contactHTML = "";
   if (d.contact_kakao) {
     contactHTML = '<span class="contact-link">카톡 ' + escHtml(d.contact_kakao) + '</span>';
@@ -314,18 +335,15 @@ function renderCard(d, searchQuery) {
     contactHTML = '<a href="tel:' + d.contact_phone.replace(/[^0-9+]/g, "") + '" class="contact-link">' + escHtml(d.contact_phone) + '</a>';
   }
 
-  // 골프장명 하이라이트
-  var displayName = escHtml(d.golf_course);
-  var displayNameEn = escHtml(d.golf_course_en || "");
-  if (searchQuery) {
-    displayName = highlightMatch(d.golf_course, searchQuery);
-    displayNameEn = highlightMatch(d.golf_course_en || "", searchQuery);
-  }
+  var displayName = searchQuery ? highlightMatch(d.golf_course, searchQuery) : escHtml(d.golf_course);
+  var displayNameEn = searchQuery ? highlightMatch(d.golf_course_en || "", searchQuery) : escHtml(d.golf_course_en || "");
+
+  var countryFlag = d.country === "인도네시아" ? "&#x1F1EE;&#x1F1E9; " : d.country === "태국" ? "&#x1F1F9;&#x1F1ED; " : "";
 
   return '<div class="card">' +
     '<div class="card-header">' +
       '<div class="card-header-left">' +
-        '<div class="course-name">' + displayName + '</div>' +
+        '<div class="course-name">' + countryFlag + displayName + '</div>' +
         '<div class="course-sub">' + displayNameEn + (displayNameEn && d.region ? " &middot; " : "") + escHtml(d.region || "") + '</div>' +
       '</div>' +
       '<div class="badges">' +
@@ -348,10 +366,7 @@ function highlightMatch(text, query) {
   var lower = text.toLowerCase();
   var idx = lower.indexOf(query.toLowerCase());
   if (idx === -1) return escHtml(text);
-  var before = text.substring(0, idx);
-  var match = text.substring(idx, idx + query.length);
-  var after = text.substring(idx + query.length);
-  return escHtml(before) + '<mark>' + escHtml(match) + '</mark>' + escHtml(after);
+  return escHtml(text.substring(0, idx)) + '<mark>' + escHtml(text.substring(idx, idx + query.length)) + '</mark>' + escHtml(text.substring(idx + query.length));
 }
 
 function formatDate(s) {
