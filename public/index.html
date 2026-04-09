@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>타이골프프로모션</title>
+<title>글로벌골프 프로모션</title>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -22,20 +22,17 @@
   .logo span{font-weight:400;color:var(--text2)}
   .count-badge{font-size:12px;color:var(--text2);background:var(--card);border:1px solid var(--border);padding:4px 10px;border-radius:20px}
 
-  /* 검색 */
   .search-wrap{position:relative;margin-bottom:10px}
   .search-input{width:100%;font-family:inherit;font-size:14px;padding:10px 14px 10px 38px;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);outline:none;transition:border-color 0.15s}
   .search-input:focus{border-color:var(--accent)}
   .search-input::placeholder{color:var(--text3)}
   .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--text3)}
 
-  /* 국가 탭 */
   .country-tabs{display:flex;gap:8px;margin-bottom:10px}
   .country-tab{flex:1;font-family:inherit;font-size:14px;font-weight:600;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;text-align:center;transition:all 0.15s}
   .country-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
   .country-tab .flag{margin-right:4px}
 
-  /* 지역 필터 */
   .filter-scroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:10px}
   .filter-scroll::-webkit-scrollbar{display:none}
   .filter-btn{flex-shrink:0;font-family:inherit;font-size:13px;font-weight:500;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
@@ -45,14 +42,21 @@
   .sort-bar span{font-size:12px;color:var(--text3)}
   .sort-select{font-family:inherit;font-size:12px;color:var(--text2);background:transparent;border:none;cursor:pointer}
 
-  .card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px;border:1px solid var(--border);transition:transform 0.1s}
-  .card:active{transform:scale(0.985)}
-  .card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+  /* 카드 */
+  .card{background:var(--card);border-radius:14px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden}
+  .card-main{padding:16px}
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
   .card-header-left{flex:1;min-width:0}
   .course-name{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-0.3px;line-height:1.3}
   .course-sub{font-size:12px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .badges{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
-  .badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;white-space:nowrap}
+  .promo-count-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;background:#F2F1EC;color:var(--text2);white-space:nowrap;flex-shrink:0}
+
+  /* 프로모션 항목 */
+  .promo-item{padding:12px 16px;border-top:1px solid var(--border)}
+  .promo-item:first-child{border-top:none}
+  .promo-top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:6px}
+  .promo-badges{display:flex;gap:4px;flex-wrap:wrap}
+  .badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:8px;white-space:nowrap}
   .type-all{background:var(--green-bg);color:var(--green)}
   .type-green{background:var(--amber-bg);color:var(--amber)}
   .type-pkg{background:var(--purple-bg);color:var(--purple)}
@@ -62,18 +66,26 @@
   .status-ending{background:var(--red-bg);color:var(--red);animation:pulse 2s infinite}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
 
-  .price-row{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-  .price-main{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-0.5px}
+  .price-row{display:flex;align-items:baseline;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+  .price-main{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-0.5px}
   .price-unit{font-size:13px;font-weight:500;color:var(--text2)}
   .price-sep{font-size:13px;color:var(--text3)}
-  .tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+  .tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
   .tag{font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;background:#F2F1EC;color:var(--text2)}
   .tag-included{background:var(--green-bg);color:var(--green)}
   .tag-extra{background:var(--red-bg);color:var(--red)}
-  .cond-text{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px;padding:8px 10px;background:#FAFAF7;border-radius:8px}
-  .card-footer{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border)}
+  .cond-text{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:6px;padding:6px 10px;background:#FAFAF7;border-radius:8px}
+  .promo-footer{display:flex;justify-content:space-between;align-items:center}
   .date-text{font-size:12px;color:var(--text3)}
   .contact-link{font-size:12px;font-weight:600;color:var(--accent);text-decoration:none}
+
+  /* 접기/펼치기 */
+  .expand-btn{width:100%;padding:8px;border:none;border-top:1px solid var(--border);background:#FAFAF7;color:var(--text2);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:background 0.15s}
+  .expand-btn:active{background:#F0EFE9}
+  .expand-btn svg{width:14px;height:14px;vertical-align:middle;margin-left:4px;transition:transform 0.2s}
+  .expand-btn.open svg{transform:rotate(180deg)}
+  .promo-hidden{display:none}
+  .promo-hidden.show{display:block}
 
   .empty{text-align:center;padding:60px 20px;color:var(--text3)}
   .empty-icon{font-size:40px;margin-bottom:12px}
@@ -85,7 +97,7 @@
   .sk-line:nth-child(1){width:55%;height:18px}.sk-line:nth-child(2){width:35%}.sk-line:nth-child(3){width:40%;height:24px}.sk-line:last-child{width:80%;margin-bottom:0}
   @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 
-  .refresh-btn{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(27,94,32,0.3);display:flex;align-items:center;justify-content:center;transition:transform 0.15s;z-index:100}
+  .refresh-btn{position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;box-shadow:0 4px 12px rgba(27,94,32,0.3);display:flex;align-items:center;justify-content:center;transition:transform 0.15s;z-index:100}
   .refresh-btn:active{transform:scale(0.9)}
   .refresh-btn svg{width:22px;height:22px;fill:#fff}
   mark{background:#FEF08A;color:var(--text);border-radius:2px;padding:0 1px}
@@ -96,23 +108,18 @@
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div class="logo">타이인니골프 <span>프로모션</span></div>
+      <div class="logo">글로벌골프 <span>프로모션</span></div>
       <div class="count-badge" id="countBadge">불러오는 중...</div>
     </div>
-
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="text" class="search-input" id="searchInput" placeholder="골프장 검색 (한글/영어)" oninput="render()">
     </div>
-
-    <!-- 국가 탭 -->
     <div class="country-tabs" id="countryTabs">
       <button class="country-tab active" onclick="setCountry('전체')"><span class="flag">&#x1F30F;</span>전체</button>
       <button class="country-tab" onclick="setCountry('태국')"><span class="flag">&#x1F1F9;&#x1F1ED;</span>태국</button>
       <button class="country-tab" onclick="setCountry('인도네시아')"><span class="flag">&#x1F1EE;&#x1F1E9;</span>인도네시아</button>
     </div>
-
-    <!-- 지역 필터 -->
     <div class="filter-scroll" id="filters"></div>
   </div>
 
@@ -129,7 +136,6 @@
   <div id="content">
     <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
     <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
-    <div class="skeleton-card"><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div><div class="sk-line"></div></div>
   </div>
 </div>
 
@@ -138,28 +144,21 @@
 </button>
 
 <script>
-// ============================================================
 var SUPABASE_URL = "https://lkdhclaoxqgrlrjmsglm.supabase.co";
 var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxrZGhjbGFveHFncmxyam1zZ2xtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0NzE5MDMsImV4cCI6MjA5MTA0NzkwM30.rKsKu_LvYT1QP2QUilrvBT2AwU0TzwK9Aknk6eXEcoE";
-// ============================================================
 
 var allData = [];
 var activeCountry = "전체";
 var activeRegion = "전체";
+var expandedCards = {};
 
 function setCountry(c) {
   activeCountry = c;
   activeRegion = "전체";
-  document.querySelectorAll(".country-tab").forEach(function(btn) {
-    btn.classList.remove("active");
-  });
-  // 해당 버튼 활성화
   var tabs = document.querySelectorAll(".country-tab");
   for (var i = 0; i < tabs.length; i++) {
-    if (tabs[i].textContent.indexOf(c === "전체" ? "전체" : c) !== -1) {
-      tabs[i].classList.add("active");
-      break;
-    }
+    tabs[i].classList.remove("active");
+    if ((c === "전체" && i === 0) || tabs[i].textContent.indexOf(c) !== -1) tabs[i].classList.add("active");
   }
   buildRegionFilters();
   render();
@@ -173,22 +172,17 @@ async function loadData() {
     );
     if (!res.ok) throw new Error("DB 연결 실패");
     allData = await res.json();
-
-    // 종료된 프로모션 제외
     var today = new Date().toISOString().split("T")[0];
     allData = allData.filter(function(d) {
       if (!d.end_date) return true;
       return d.end_date >= today;
     });
-
     buildRegionFilters();
     render();
   } catch (err) {
     console.error(err);
     document.getElementById("content").innerHTML =
-      '<div class="empty"><div class="empty-icon">&#x26A0;&#xFE0F;</div>' +
-      '<div class="empty-title">연결할 수 없습니다</div>' +
-      '<div class="empty-desc">인터넷 연결을 확인해주세요.</div></div>';
+      '<div class="empty"><div class="empty-icon">&#x26A0;&#xFE0F;</div><div class="empty-title">연결할 수 없습니다</div><div class="empty-desc">인터넷 연결을 확인해주세요.</div></div>';
     document.getElementById("countBadge").textContent = "연결 오류";
   }
 }
@@ -203,11 +197,9 @@ function buildRegionFilters() {
   var regionSet = {};
   countryData.forEach(function(d) { if (d.region) regionSet[d.region] = true; });
   var regions = ["전체"].concat(Object.keys(regionSet).sort());
-
   var el = document.getElementById("filters");
   el.innerHTML = "";
   activeRegion = "전체";
-
   regions.forEach(function(r) {
     var b = document.createElement("button");
     b.className = "filter-btn" + (r === "전체" ? " active" : "");
@@ -234,22 +226,51 @@ function getDaysLeft(d) {
 }
 
 function getStatus(d) {
-  var today = new Date();
-  today.setHours(0, 0, 0, 0);
+  var today = new Date(); today.setHours(0,0,0,0);
   var todayStr = today.toISOString().split("T")[0];
-
   if (d.start_date && d.start_date > todayStr) {
     var daysToStart = Math.ceil((new Date(d.start_date) - today) / 86400000);
     return { label: daysToStart + "일 후 시작", css: "status-upcoming" };
   }
   var daysLeft = getDaysLeft(d);
-  if (daysLeft <= 3 && daysLeft >= 0) {
-    return { label: daysLeft === 0 ? "오늘 마감" : daysLeft + "일 남음", css: "status-ending" };
-  }
-  if (daysLeft <= 7 && daysLeft > 3) {
-    return { label: daysLeft + "일 남음", css: "status-ending" };
-  }
+  if (daysLeft <= 3 && daysLeft >= 0) return { label: daysLeft === 0 ? "오늘 마감" : daysLeft + "일 남음", css: "status-ending" };
+  if (daysLeft <= 7) return { label: daysLeft + "일 남음", css: "status-ending" };
   return { label: "진행 중", css: "status-active" };
+}
+
+// === 같은 골프장으로 그룹핑 ===
+function groupByCourse(items) {
+  var map = {};
+  var order = [];
+  for (var i = 0; i < items.length; i++) {
+    var key = items[i].golf_course;
+    if (!map[key]) {
+      map[key] = [];
+      order.push(key);
+    }
+    map[key].push(items[i]);
+  }
+  return order.map(function(k) {
+    return { courseName: k, promos: map[k] };
+  });
+}
+
+function toggleExpand(cardId) {
+  expandedCards[cardId] = !expandedCards[cardId];
+  var hiddenEl = document.getElementById("hidden-" + cardId);
+  var btnEl = document.getElementById("btn-" + cardId);
+  if (hiddenEl && btnEl) {
+    if (expandedCards[cardId]) {
+      hiddenEl.classList.add("show");
+      btnEl.classList.add("open");
+      btnEl.innerHTML = '접기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>';
+    } else {
+      hiddenEl.classList.remove("show");
+      btnEl.classList.remove("open");
+      var count = hiddenEl.querySelectorAll(".promo-item").length;
+      btnEl.innerHTML = '프로모션 ' + count + '개 더 보기<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>';
+    }
+  }
 }
 
 function render() {
@@ -259,7 +280,6 @@ function render() {
   if (activeRegion !== "전체") {
     items = items.filter(function(d) { return d.region === activeRegion; });
   }
-
   if (searchQuery) {
     items = items.filter(function(d) {
       var name = (d.golf_course || "").toLowerCase();
@@ -273,25 +293,71 @@ function render() {
   else if (sort === "price_high") items.sort(function(a, b) { return getMinPrice(b) - getMinPrice(a); });
   else if (sort === "ending") items.sort(function(a, b) { return getDaysLeft(a) - getDaysLeft(b); });
 
-  document.getElementById("countBadge").textContent = items.length + "개 프로모션";
+  // 그룹핑
+  var groups = groupByCourse(items);
 
-  if (items.length === 0) {
-    var emptyMsg = searchQuery
-      ? '"' + escHtml(searchQuery) + '" 검색 결과가 없습니다.'
-      : "등록된 프로모션이 없어요.";
+  var totalPromos = items.length;
+  document.getElementById("countBadge").textContent = groups.length + "개 골프장 · " + totalPromos + "개 프로모션";
+
+  if (groups.length === 0) {
+    var emptyMsg = searchQuery ? '"' + escHtml(searchQuery) + '" 검색 결과가 없습니다.' : "등록된 프로모션이 없어요.";
     document.getElementById("content").innerHTML =
-      '<div class="empty"><div class="empty-icon">&#x1F3CC;&#xFE0F;</div>' +
-      '<div class="empty-title">프로모션이 없습니다</div>' +
-      '<div class="empty-desc">' + emptyMsg + '</div></div>';
+      '<div class="empty"><div class="empty-icon">&#x1F3CC;&#xFE0F;</div><div class="empty-title">프로모션이 없습니다</div><div class="empty-desc">' + emptyMsg + '</div></div>';
     return;
   }
 
-  document.getElementById("content").innerHTML = items.map(function(d) {
-    return renderCard(d, searchQuery);
+  document.getElementById("content").innerHTML = groups.map(function(g, gi) {
+    return renderGroupCard(g, gi, searchQuery);
   }).join("");
 }
 
-function renderCard(d, searchQuery) {
+function renderGroupCard(group, groupIndex, searchQuery) {
+  var first = group.promos[0];
+  var countryFlag = first.country === "인도네시아" ? "&#x1F1EE;&#x1F1E9; " : first.country === "태국" ? "&#x1F1F9;&#x1F1ED; " : "";
+  var displayName = searchQuery ? highlightMatch(first.golf_course, searchQuery) : escHtml(first.golf_course);
+  var displayNameEn = searchQuery ? highlightMatch(first.golf_course_en || "", searchQuery) : escHtml(first.golf_course_en || "");
+
+  var html = '<div class="card">';
+  html += '<div class="card-main">';
+  html += '<div class="card-header">';
+  html += '<div class="card-header-left">';
+  html += '<div class="course-name">' + countryFlag + displayName + '</div>';
+  html += '<div class="course-sub">' + displayNameEn + (displayNameEn && first.region ? " &middot; " : "") + escHtml(first.region || "") + '</div>';
+  html += '</div>';
+  if (group.promos.length > 1) {
+    html += '<span class="promo-count-badge">' + group.promos.length + '개 프로모션</span>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // 첫 번째 프로모션은 항상 표시
+  html += renderPromoItem(group.promos[0]);
+
+  // 2개 이상이면 나머지는 접기/펼치기
+  if (group.promos.length > 1) {
+    var cardId = "g" + groupIndex;
+    var isOpen = expandedCards[cardId];
+
+    html += '<div id="hidden-' + cardId + '" class="promo-hidden' + (isOpen ? ' show' : '') + '">';
+    for (var i = 1; i < group.promos.length; i++) {
+      html += renderPromoItem(group.promos[i]);
+    }
+    html += '</div>';
+
+    var btnLabel = isOpen
+      ? '접기'
+      : '프로모션 ' + (group.promos.length - 1) + '개 더 보기';
+    var btnClass = isOpen ? 'expand-btn open' : 'expand-btn';
+    html += '<button id="btn-' + cardId + '" class="' + btnClass + '" onclick="toggleExpand(\'' + cardId + '\')">';
+    html += btnLabel + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>';
+    html += '</button>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function renderPromoItem(d) {
   var status = getStatus(d);
   var badgeClass = d.price_type === "all_inclusive" ? "type-all" : d.price_type === "package" ? "type-pkg" : "type-green";
   var badgeText = d.price_type === "all_inclusive" ? "올인클루시브" : d.price_type === "package" ? "패키지" : "그린피만";
@@ -310,10 +376,8 @@ function renderCard(d, searchQuery) {
     priceHTML = entries.map(function(e, i) {
       var label = labelMap[e[0]] || e[0];
       var sep = i > 0 ? ' <span class="price-sep">/</span> ' : "";
-      var fontSize = entries.length > 2 ? "17" : "20";
-      return sep + '<span class="price-main" style="font-size:' + fontSize + 'px">' +
-        Number(e[1]).toLocaleString() + '</span>' +
-        '<span class="price-unit"> ' + curr + "(" + label + ")</span>";
+      var fs = entries.length > 2 ? "17" : "20";
+      return sep + '<span class="price-main" style="font-size:' + fs + 'px">' + Number(e[1]).toLocaleString() + '</span><span class="price-unit"> ' + curr + "(" + label + ")</span>";
     }).join("");
   }
 
@@ -327,44 +391,26 @@ function renderCard(d, searchQuery) {
 
   var startStr = d.start_date ? formatDate(d.start_date) : "미정";
   var endStr = d.end_date ? formatDate(d.end_date) : "상시";
-
   var contactHTML = "";
-  if (d.contact_kakao) {
-    contactHTML = '<span class="contact-link">카톡 ' + escHtml(d.contact_kakao) + '</span>';
-  } else if (d.contact_phone) {
-    contactHTML = '<a href="tel:' + d.contact_phone.replace(/[^0-9+]/g, "") + '" class="contact-link">' + escHtml(d.contact_phone) + '</a>';
-  }
+  if (d.contact_kakao) contactHTML = '<span class="contact-link">카톡 ' + escHtml(d.contact_kakao) + '</span>';
+  else if (d.contact_phone) contactHTML = '<a href="tel:' + d.contact_phone.replace(/[^0-9+]/g,"") + '" class="contact-link">' + escHtml(d.contact_phone) + '</a>';
 
-  var displayName = searchQuery ? highlightMatch(d.golf_course, searchQuery) : escHtml(d.golf_course);
-  var displayNameEn = searchQuery ? highlightMatch(d.golf_course_en || "", searchQuery) : escHtml(d.golf_course_en || "");
-
-  var countryFlag = d.country === "인도네시아" ? "&#x1F1EE;&#x1F1E9; " : d.country === "태국" ? "&#x1F1F9;&#x1F1ED; " : "";
-
-  return '<div class="card">' +
-    '<div class="card-header">' +
-      '<div class="card-header-left">' +
-        '<div class="course-name">' + countryFlag + displayName + '</div>' +
-        '<div class="course-sub">' + displayNameEn + (displayNameEn && d.region ? " &middot; " : "") + escHtml(d.region || "") + '</div>' +
-      '</div>' +
-      '<div class="badges">' +
-        '<span class="status-badge ' + status.css + '">' + status.label + '</span>' +
-        '<span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
-      '</div>' +
-    '</div>' +
-    '<div class="price-row">' + priceHTML + '</div>' +
-    (tags.length ? '<div class="tags">' + tags.join("") + '</div>' : "") +
-    (d.conditions ? '<div class="cond-text">' + escHtml(d.conditions) + '</div>' : "") +
-    '<div class="card-footer">' +
-      '<span class="date-text">' + startStr + ' ~ ' + endStr + '</span>' +
-      contactHTML +
-    '</div>' +
-  '</div>';
+  var html = '<div class="promo-item">';
+  html += '<div class="promo-top"><div class="promo-badges">';
+  html += '<span class="status-badge ' + status.css + '">' + status.label + '</span>';
+  html += '<span class="badge ' + badgeClass + '">' + badgeText + '</span>';
+  html += '</div></div>';
+  html += '<div class="price-row">' + priceHTML + '</div>';
+  if (tags.length) html += '<div class="tags">' + tags.join("") + '</div>';
+  if (d.conditions) html += '<div class="cond-text">' + escHtml(d.conditions) + '</div>';
+  html += '<div class="promo-footer"><span class="date-text">' + startStr + ' ~ ' + endStr + '</span>' + contactHTML + '</div>';
+  html += '</div>';
+  return html;
 }
 
 function highlightMatch(text, query) {
   if (!text || !query) return escHtml(text);
-  var lower = text.toLowerCase();
-  var idx = lower.indexOf(query.toLowerCase());
+  var idx = text.toLowerCase().indexOf(query.toLowerCase());
   if (idx === -1) return escHtml(text);
   return escHtml(text.substring(0, idx)) + '<mark>' + escHtml(text.substring(idx, idx + query.length)) + '</mark>' + escHtml(text.substring(idx + query.length));
 }
@@ -376,7 +422,7 @@ function formatDate(s) {
 
 function escHtml(s) {
   if (!s) return "";
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
 loadData();
