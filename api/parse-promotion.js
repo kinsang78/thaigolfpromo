@@ -12,68 +12,53 @@ const supabase = createClient(
 // 새 골프장이 추가되면 여기에 등록하세요
 // ====================================================================
 var COURSE_MASTER = {
-  // === 태국 - 방콕 ===
-  "로얄방파인": { en: "Royal Bang Pa-In Golf Club", country: "태국", region: "방콕" },
-  "알파인": { en: "Alpine Golf & Sports Club", country: "태국", region: "방콕" },
-  "더 빈티지 클럽": { en: "The Vintage Club", country: "태국", region: "방콕" },
-  "빈티지클럽": { en: "The Vintage Club", country: "태국", region: "방콕" },
-  "레가시": { en: "Legacy Golf Club", country: "태국", region: "방콕" },
-  "레거시 골프 클럽": { en: "Legacy Golf Club", country: "태국", region: "방콕" },
-  "에카차이": { en: "Ekachai Golf & Country Club", country: "태국", region: "방콕" },
-  "크룽까비": { en: "Krung Kavee Golf Club", country: "태국", region: "방콕" },
-  "그랑프리 CC": { en: "Grand Prix Golf Club", country: "태국", region: "방콕" },
-  "방파콩리버사이드": { en: "Bangpakong Riverside Country Club", country: "태국", region: "방콕" },
-  "방콕그린벨리": { en: "Bangkok Green Valley", country: "태국", region: "방콕" },
-  "탄야": { en: "Thanya Golf Club", country: "태국", region: "방콕" },
-  "방사이": { en: "Bangsai Country Club", country: "태국", region: "방콕" },
-  "나바타나": { en: "Navatanee Golf Club", country: "태국", region: "방콕" },
-  "로얄크릭": { en: "Royal Creek Golf Club", country: "태국", region: "방콕" },
-  "워터사이드": { en: "Waterside Golf Club", country: "태국", region: "방콕" },
-  "레이크뷰": { en: "Lake View Resort & Golf Club", country: "태국", region: "방콕" },
-  "롤링힐스": { en: "Rolling Hills Golf Club", country: "태국", region: "방콕" },
-  "플랜테이션": { en: "The Plantation Golf Club", country: "태국", region: "방콕" },
-  "수파부룩": { en: "Suwan Golf & Country Club", country: "태국", region: "방콕" },
-
-  // === 태국 - 파타야 ===
-  "레이크우드": { en: "Lakewood Country Club", country: "태국", region: "파타야" },
-  "더파인": { en: "The Fine Golf Club", country: "태국", region: "파타야" },
-  "무앙엑": { en: "Muang Ake Vista Golf Club", country: "태국", region: "파타야" },
-  "유니랜드": { en: "Uni Land Golf & Country Club", country: "태국", region: "파타야" },
-  "캥카찬": { en: "Khao Kheow Country Club", country: "태국", region: "파타야" },
-  "이스턴스타": { en: "Eastern Star Country Club", country: "태국", region: "파타야" },
-  "그린우드": { en: "Greenwood Golf Club", country: "태국", region: "파타야" },
-  "크리스탈베이": { en: "Crystal Bay Golf Club", country: "태국", region: "파타야" },
-  "시암CC": { en: "Siam Country Club", country: "태국", region: "파타야" },
-
-  // === 태국 - 아유타야 ===
-  "아유타야 골프클럽": { en: "Ayutthaya Golf Club", country: "태국", region: "아유타야" },
-  "아유타야": { en: "Ayutthaya Golf Club", country: "태국", region: "아유타야" },
-
-  // === 태국 - 치앙마이 ===
-  "가산 레거시": { en: "Gassan Legacy Golf Club", country: "태국", region: "치앙마이" },
-  "가산 파노라마": { en: "Gassan Panorama Golf Club", country: "태국", region: "치앙마이" },
-
-  // === 태국 - 카오야이 ===
-  "카오야이CC": { en: "Khao Yai Country Club", country: "태국", region: "카오야이" },
-
-  // === 인도네시아 - 자카르타 ===
-  "로얄 자카르타": { en: "Royal Jakarta Golf Club", country: "인도네시아", region: "자카르타" },
-  "리버사이드 골프": { en: "Riverside Golf Club", country: "인도네시아", region: "자카르타" },
-  "모던 골프": { en: "Modern Golf & Country Club", country: "인도네시아", region: "자카르타" },
-  "세다유 인도": { en: "Sedayu Indo Golf Club", country: "인도네시아", region: "자카르타" },
-  "젱카랑": { en: "Cengkareng Golf Club", country: "인도네시아", region: "자카르타" },
-
-  // === 인도네시아 - 보고르 ===
-  "구눙 글리스": { en: "Gunung Geulis Country Club", country: "인도네시아", region: "보고르" },
-  "레인보우 힐스": { en: "Rainbow Hills Golf Club", country: "인도네시아", region: "보고르" },
-  "보고르 라야": { en: "Bogor Raya Development Golf Club", country: "인도네시아", region: "보고르" },
-
-  // === 인도네시아 - 기타 ===
-  "뻬르마따 센툴": { en: "Permata Sentul Golf Club", country: "인도네시아", region: "센툴" },
-  "페르마타 센툴": { en: "Permata Sentul Golf Club", country: "인도네시아", region: "센툴" },
-  "센툴 하이랜드": { en: "Sentul Highlands Golf Club", country: "인도네시아", region: "센툴" },
-  "자바베카": { en: "Jababeka Golf & Country Club", country: "인도네시아", region: "찌까랑" },
-  "수바르나 자카르타": { en: "Suvarna Jakarta Golf Club", country: "인도네시아", region: "자카르타" },
+  "로얄방파인": { en: "Royal Bang Pa-In Golf Club", country: "태국", region: "방콕", lat: 14.1692, lng: 100.5384 },
+  "알파인": { en: "Alpine Golf & Sports Club", country: "태국", region: "방콕", lat: 14.1089, lng: 100.7105 },
+  "더 빈티지 클럽": { en: "The Vintage Club", country: "태국", region: "방콕", lat: 13.5360, lng: 100.8425 },
+  "빈티지클럽": { en: "The Vintage Club", country: "태국", region: "방콕", lat: 13.5360, lng: 100.8425 },
+  "레가시": { en: "Legacy Golf Club", country: "태국", region: "방콕", lat: 13.8773, lng: 100.7030 },
+  "레거시 골프 클럽": { en: "Legacy Golf Club", country: "태국", region: "방콕", lat: 13.8773, lng: 100.7030 },
+  "에카차이": { en: "Ekachai Golf & Country Club", country: "태국", region: "방콕", lat: 13.6285, lng: 100.3478 },
+  "크룽까비": { en: "Krung Kavee Golf Club", country: "태국", region: "방콕", lat: 14.0025, lng: 100.6997 },
+  "그랑프리 CC": { en: "Grand Prix Golf Club", country: "태국", region: "방콕", lat: 14.3774, lng: 99.4990 },
+  "방파콩리버사이드": { en: "Bangpakong Riverside Country Club", country: "태국", region: "방콕", lat: 13.5679, lng: 101.0308 },
+  "방콕그린벨리": { en: "Bangkok Green Valley", country: "태국", region: "방콕", lat: 13.6086, lng: 100.7311 },
+  "탄야": { en: "Thanya Golf Club", country: "태국", region: "방콕", lat: 13.9528, lng: 100.6963 },
+  "방사이": { en: "Bangsai Country Club", country: "태국", region: "방콕", lat: 14.2095, lng: 100.4706 },
+  "나바타나": { en: "Navatanee Golf Club", country: "태국", region: "방콕", lat: 13.8029, lng: 100.6743 },
+  "로얄크릭": { en: "Royal Creek Golf Club", country: "태국", region: "방콕", lat: 17.4647, lng: 102.9636 },
+  "워터사이드": { en: "Waterside Golf Club", country: "태국", region: "방콕", lat: 12.9141, lng: 100.9972 },
+  "레이크뷰": { en: "Lake View Resort & Golf Club", country: "태국", region: "방콕", lat: 12.6838, lng: 99.8921 },
+  "롤링힐스": { en: "Rolling Hills Golf Club", country: "태국", region: "방콕", lat: 12.8954, lng: 100.9816 },
+  "플랜테이션": { en: "The Plantation Golf Club", country: "태국", region: "방콕", lat: 12.9093, lng: 101.0086 },
+  "수파부룩": { en: "Suwan Golf & Country Club", country: "태국", region: "방콕", lat: 13.8166, lng: 100.1640 },
+  "레이크우드": { en: "Lakewood Country Club", country: "태국", region: "파타야", lat: 13.6222, lng: 100.7794 },
+  "더파인": { en: "The Fine Golf Club", country: "태국", region: "파타야", lat: 13.1609, lng: 101.2271 },
+  "무앙엑": { en: "Muang Ake Vista Golf Club", country: "태국", region: "파타야", lat: 13.9661, lng: 100.5783 },
+  "유니랜드": { en: "Uni Land Golf & Country Club", country: "태국", region: "파타야", lat: 13.7518, lng: 100.0178 },
+  "캥카찬": { en: "Khao Kheow Country Club", country: "태국", region: "파타야", lat: 13.2057, lng: 101.0397 },
+  "이스턴스타": { en: "Eastern Star Country Club", country: "태국", region: "파타야", lat: 12.7025, lng: 101.0407 },
+  "그린우드": { en: "Greenwood Golf Club", country: "태국", region: "파타야", lat: 13.1609, lng: 101.2271 },
+  "크리스탈베이": { en: "Crystal Bay Golf Club", country: "태국", region: "파타야", lat: 13.2420, lng: 100.9479 },
+  "시암CC": { en: "Siam Country Club", country: "태국", region: "파타야", lat: 12.9180, lng: 100.9878 },
+  "아유타야 골프클럽": { en: "Ayutthaya Golf Club", country: "태국", region: "아유타야", lat: 14.3047, lng: 100.5803 },
+  "아유타야": { en: "Ayutthaya Golf Club", country: "태국", region: "아유타야", lat: 14.3047, lng: 100.5803 },
+  "가산 레거시": { en: "Gassan Legacy Golf Club", country: "태국", region: "치앙마이", lat: 18.6641, lng: 99.0868 },
+  "가산 파노라마": { en: "Gassan Panorama Golf Club", country: "태국", region: "치앙마이", lat: 18.6419, lng: 99.0849 },
+  "카오야이CC": { en: "Khao Yai Country Club", country: "태국", region: "카오야이", lat: 14.5200, lng: 101.3700 },
+  "로얄 자카르타": { en: "Royal Jakarta Golf Club", country: "인도네시아", region: "자카르타", lat: -6.2717, lng: 106.9011 },
+  "리버사이드 골프": { en: "Riverside Golf Club", country: "인도네시아", region: "자카르타", lat: -6.4217, lng: 106.9021 },
+  "모던 골프": { en: "Modern Golf & Country Club", country: "인도네시아", region: "자카르타", lat: -6.1979, lng: 106.6434 },
+  "세다유 인도": { en: "Sedayu Indo Golf Club", country: "인도네시아", region: "자카르타", lat: -6.0867, lng: 106.7494 },
+  "젱카랑": { en: "Cengkareng Golf Club", country: "인도네시아", region: "자카르타", lat: -6.1218, lng: 106.6741 },
+  "구눙 글리스": { en: "Gunung Geulis Country Club", country: "인도네시아", region: "보고르", lat: -6.6250, lng: 106.8620 },
+  "레인보우 힐스": { en: "Rainbow Hills Golf Club", country: "인도네시아", region: "보고르", lat: -6.6205, lng: 106.8864 },
+  "보고르 라야": { en: "Bogor Raya Development Golf Club", country: "인도네시아", region: "보고르", lat: -6.5985, lng: 106.8362 },
+  "뻬르마따 센툴": { en: "Permata Sentul Golf Club", country: "인도네시아", region: "센툴", lat: -6.5273, lng: 106.8707 },
+  "페르마타 센툴": { en: "Permata Sentul Golf Club", country: "인도네시아", region: "센툴", lat: -6.5273, lng: 106.8707 },
+  "센툴 하이랜드": { en: "Sentul Highlands Golf Club", country: "인도네시아", region: "센툴", lat: -6.5853, lng: 106.8768 },
+  "자바베카": { en: "Jababeka Golf & Country Club", country: "인도네시아", region: "찌까랑", lat: -6.2950, lng: 107.1757 },
+  "수바르나 자카르타": { en: "Suvarna Jakarta Golf Club", country: "인도네시아", region: "자카르타", lat: -6.2850, lng: 106.8946 },
 };
 
 // 마스터 데이터를 프롬프트용 텍스트로 변환
@@ -238,6 +223,8 @@ function correctWithMaster(promo) {
     promo.golf_course_en = m.en;
     promo.country = m.country;
     promo.region = m.region;
+    promo.latitude = m.lat;
+    promo.longitude = m.lng;
     return promo;
   }
 
@@ -250,6 +237,8 @@ function correctWithMaster(promo) {
       promo.golf_course_en = m2.en;
       promo.country = m2.country;
       promo.region = m2.region;
+      promo.latitude = m2.lat;
+      promo.longitude = m2.lng;
       return promo;
     }
   }
@@ -264,6 +253,8 @@ function correctWithMaster(promo) {
         promo.golf_course_en = m3.en;
         promo.country = promo.country || m3.country;
         promo.region = promo.region || m3.region;
+        promo.latitude = m3.lat;
+        promo.longitude = m3.lng;
         return promo;
       }
     }
@@ -334,6 +325,8 @@ async function saveWithDedup(promo, rawMessage, userId) {
       contact_kakao: promo.contact_kakao || best.contact_kakao,
       contact_phone: promo.contact_phone || best.contact_phone,
       conditions: promo.conditions || best.conditions,
+      latitude: promo.latitude || best.latitude,
+      longitude: promo.longitude || best.longitude,
       raw_message: rawMessage,
       updated_at: new Date().toISOString(),
     }).eq("id", best.id);
