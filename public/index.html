@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>타이인니골프</title>
+<title>글로벌골프</title>
 <style>
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -29,8 +29,7 @@
   .country-tabs{display:flex;gap:8px;margin-bottom:10px}
   .country-tab{flex:1;font-family:inherit;font-size:14px;font-weight:600;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;text-align:center;transition:all 0.15s}
   .country-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .filter-scroll{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:10px}
-  .filter-scroll::-webkit-scrollbar{display:none}
+  .filter-scroll{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:10px}
   .filter-btn{flex-shrink:0;font-family:inherit;font-size:13px;font-weight:500;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--text2);cursor:pointer;transition:all 0.15s;white-space:nowrap}
   .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
   .sort-bar{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}
@@ -132,7 +131,7 @@
 <div class="app">
   <div class="header">
     <div class="header-top">
-      <div class="logo">타이인니골프 <span>프로모션</span></div>
+      <div class="logo">글로벌골프 <span>프로모션</span></div>
       <div class="count-badge" id="countBadge">불러오는 중...</div>
     </div>
     <div class="search-wrap">
@@ -318,15 +317,17 @@ function calcDistance(a,b,c,d){
 function buildRegionFilters(){
   var items=getFilteredByCountry();
   var rs={};
-  items.forEach(function(d){if(d.region) rs[d.region]=true});
-  var rg=["전체"].concat(Object.keys(rs).sort());
+  items.forEach(function(d){if(d.region){if(!rs[d.region]) rs[d.region]=0; rs[d.region]++}});
+  // 골프장 수 내림차순 정렬
+  var sorted=Object.keys(rs).sort(function(a,b){return rs[b]-rs[a]});
+  var rg=["전체"].concat(sorted);
   var el=document.getElementById("filters");
   el.innerHTML="";
   activeRegion="전체";
   rg.forEach(function(r){
     var b=document.createElement("button");
     b.className="filter-btn"+(r==="전체"?" active":"");
-    b.textContent=r;
+    b.textContent=r==="전체"?r:r+" "+rs[r];
     b.onclick=function(){
       activeRegion=r;
       el.querySelectorAll(".filter-btn").forEach(function(x){x.classList.remove("active")});
