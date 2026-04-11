@@ -49,6 +49,30 @@ async function loadCourseMaster() {
   return master;
 }
 
+function isLikelyPromotion(text) {
+  if (!text || text.trim().length < 10) return false;
+
+  var keywords = [
+    "골프", "그린피", "바트", "캐디", "카트", "프로모션", "할인",
+    "올인", "라운드", "부킹", "예약", "티오프", "샷건",
+    "CC", "GC", "골프장", "컨트리클럽",
+    "THB", "IDR", "루피아",
+    "주중", "주말", "오전", "오후",
+    "포함", "별도", "불포함",
+    "대회", "토너먼트", "참가비"
+  ];
+
+  var lower = text.toLowerCase();
+  for (var i = 0; i < keywords.length; i++) {
+    if (lower.indexOf(keywords[i].toLowerCase()) !== -1) return true;
+  }
+
+  // 가격 패턴 감지 (숫자 + 바트/원/루피아, 또는 콤마 포함 숫자)
+  if (/\d{3,}/.test(text)) return true;
+
+  return false;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -58,6 +82,16 @@ module.exports = async function handler(req, res) {
   var userId = req.body && req.body.userRequest && req.body.userRequest.user ? req.body.userRequest.user.id : null;
 
   if (!utterance) return res.json(kakaoResponse("메시지를 입력받지 못했습니다."));
+
+  // 일반 대화 필터링
+  if (!isLikelyPromotion(utterance)) {
+    return res.json(kakaoResponse(
+      "골프장 프로모션 정보를 보내주세요!\n\n" +
+      "예시:\n" +
+      "알파인 주중 2500바트 그린피+캐디+카트 포함 4/1~4/30"
+    ));
+  }
+
   if (!process.env.CLAUDE_API_KEY || !process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return res.json(kakaoResponse("서버 설정 오류입니다."));
   }
@@ -131,6 +165,8 @@ module.exports = async function handler(req, res) {
       "    - weekday_morning, weekday_afternoon, weekend_morning, weekend_afternoon",
       "    - 구분 시간이 명시되어 있으면 conditions에 '12시 기준 오전/오후 구분' 같이 명시하세요.",
       "    - 오전/오후 가격이 동일하면 나누지 말고 weekday, weekend로 통합하세요.",
+      "12. 프로모션이 아닌 일반 대화(인사, 질문, 잡담 등)인 경우 빈 배열 []을 반환하세요.",
+      "    골프장명, 가격, 날짜 중 하나도 없으면 프로모션이 아닙니다.",
     ].join("\n");
 
     await cleanupExpired();
@@ -156,6 +192,15 @@ module.exports = async function handler(req, res) {
     } catch (parseErr) {
       console.error("JSON 파싱 에러:", parseErr.message);
       return res.json(kakaoResponse("프로모션 정보를 해석하지 못했습니다."));
+    }
+
+    // 빈 배열 처리 (프로모션이 아닌 메시지)
+    if (promotions.length === 0) {
+      return res.json(kakaoResponse(
+        "프로모션 정보가 감지되지 않았습니다.\n\n" +
+        "골프장명과 가격이 포함된 프로모션 메시지를 보내주세요.\n" +
+        "예: 알파인 주중 2500바트 캐디카트포함 4/1~4/30"
+      ));
     }
 
     // 마스터 데이터로 후보정
