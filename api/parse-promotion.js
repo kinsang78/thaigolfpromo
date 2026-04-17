@@ -165,8 +165,10 @@ module.exports = async function handler(req, res) {
       "    - weekday_morning, weekday_afternoon, weekend_morning, weekend_afternoon",
       "    - 구분 시간이 명시되어 있으면 conditions에 '12시 기준 오전/오후 구분' 같이 명시하세요.",
       "    - 오전/오후 가격이 동일하면 나누지 말고 weekday, weekend로 통합하세요.",
-      "12. 프로모션이 아닌 일반 대화(인사, 질문, 잡담 등)인 경우 빈 배열 []을 반환하세요.",
-      "    골프장명, 가격, 날짜 중 하나도 없으면 프로모션이 아닙니다.",
+      "12. 프로모션이 아닌 일반 대화(인사, 질문, 잡담 등)인 경우에만 빈 배열 []을 반환하세요.",
+      "    가격(숫자+바트/원/루피아)이 포함되어 있으면 반드시 프로모션으로 처리하세요.",
+      "    마스터 데이터에 없는 골프장이라도 가격 정보가 있으면 최대한 추출하세요.",
+      "    영문명을 모르면 golf_course_en을 null로 설정하고, 나머지 정보는 모두 추출하세요.",
     ].join("\n");
 
     await cleanupExpired();
