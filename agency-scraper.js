@@ -89,47 +89,84 @@ function guessRegion(slug, name) {
 // ====================================================================
 async function fetchFromGolfdigg(slug) {
     try {
-        const url = `https://golfdigg.com/en/courses/${slug}`;
-        const res = await fetch(url, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-            }
-        });
+        // 1단계: RSC 엔드포인트에서 courseId 추출
+        const tokens = ["1sypa", "1gvzm", "1"];
+        let courseId = null;
+        let rscText = null;
 
-        if (!res.ok) {
-            return { ok: false };
+        for (const token of tokens) {
+            const pageRes = await fetch(`https://golfdigg.com/en/courses/${slug}?_rsc=${token}`, {
+                headers: { "rsc": "1", "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" }
+            });
+            if (!pageRes.ok) continue;
+            const text = await pageRes.text();
+            const m = text.match(/"course"\s*:\s*\{"id"\s*:\s*"([a-f0-9]{24})"/);
+            if (m) { courseId = m[1]; rscText = text; break; }
         }
 
-        const text = await res.text();
-
-        // 가격 파싱: "greenFeeWD":"650" 또는 "greenFeeWD":650 형태
-        const wdMatch = text.match(/"greenFeeWD"\s*:\s*"?([\d,]+)"?/);
-        const weMatch = text.match(/"greenFeeWE"\s*:\s*"?([\d,]+)"?/);
-
-        if (!wdMatch && !weMatch) {
+        if (!courseId) {
             return { ok: true, weekday: null, weekend: null, name: slugToName(slug) };
         }
 
-        const weekday = wdMatch ? parseInt(wdMatch[1].replace(/,/g, "")) : null;
-        const weekend = weMatch ? parseInt(weMatch[1].replace(/,/g, "")) : null;
-
-        // 골프장 영문명 파싱: seoTitle 또는 name 필드에서
-        let name = null;
-        const seoMatch = text.match(/"seoTitle"\s*:\s*"([^"]+)"/);
+        // 골프장 영문명 추출
+        let name = slugToName(slug);
+        const seoMatch = rscText.match(/"seoTitle"\s*:\s*"([^"]+)"/);
         if (seoMatch) {
-            // "ALPINE GOLF CLUB | อัลไพน์ กอล์ฟ คลับ" → "Alpine Golf Club" 형태로 정제
-            name = seoMatch[1].split("|")[0].trim();
-            name = name.replace(/\s+/g, " ").trim();
-            // 전부 대문자면 Title Case로 변환
-            if (name === name.toUpperCase()) {
-                name = name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+            const raw = seoMatch[1].split("|")[0].trim();
+            name = raw === raw.toUpperCase()
+                ? raw.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
+                : raw;
+        }
+
+        // 2단계: 조회 날짜 생성 (실행일 기준 8~14일 후)
+        const dates = getQueryDates();
+
+        // 3단계: 슬롯 API 호출 → 날짜별 최저가 수집
+        let weekdayPrices = [];
+        let weekendPrices = [];
+
+        for (const { date, isWeekend } of dates) {
+            await delay(300);
+            try {
+                const apiUrl = `https://api.golfdigg.com/golfdigg/slot/v4/list/?courseId=${courseId}&date=${date}`;
+                const apiRes = await fetch(apiUrl, {
+                    headers: {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                        "Accept": "application/json",
+                    }
+                });
+                if (!apiRes.ok) continue;
+
+                const data = await apiRes.json();
+                if (!data.success || !data.model || !data.model.slots) continue;
+
+                const slots = data.model.slots;
+                if (slots.length === 0) continue;
+
+                // NORMAL 카테고리 슬롯만 필터링, 최저가 추출
+                const normalSlots = slots.filter(s =>
+                    s.status === "OPEN" && s.priceCategory === "NORMAL" && s.price && s.price.price > 0
+                );
+                if (normalSlots.length === 0) continue;
+
+                const minPrice = Math.min(...normalSlots.map(s => s.price.price));
+
+                if (isWeekend) {
+                    weekendPrices.push(minPrice);
+                } else {
+                    weekdayPrices.push(minPrice);
+                }
+            } catch (e) {
+                continue;
             }
         }
-        if (!name) {
-            name = slugToName(slug);
-        }
+
+        const weekday = weekdayPrices.length > 0
+            ? Math.round(weekdayPrices.reduce((a, b) => a + b, 0) / weekdayPrices.length)
+            : null;
+        const weekend = weekendPrices.length > 0
+            ? Math.round(weekendPrices.reduce((a, b) => a + b, 0) / weekendPrices.length)
+            : null;
 
         return { name, weekday, weekend, ok: true };
 
@@ -138,7 +175,30 @@ async function fetchFromGolfdigg(slug) {
     }
 }
 
-// slug를 사람이 읽기 좋은 이름으로 변환 (fallback용)
+// 실행일 기준 8~14일 후 날짜 생성 (평일 3일 + 주말 2일)
+function getQueryDates() {
+    const dates = [];
+    const now = new Date();
+    let weekdayCount = 0;
+    let weekendCount = 0;
+
+    for (let i = 8; i <= 21 && (weekdayCount < 3 || weekendCount < 2); i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() + i);
+        const dow = d.getDay(); // 0=일, 6=토
+        const isWeekend = (dow === 0 || dow === 6);
+
+        if (isWeekend && weekendCount < 2) {
+            dates.push({ date: d.toISOString().split("T")[0], isWeekend: true });
+            weekendCount++;
+        } else if (!isWeekend && weekdayCount < 3) {
+            dates.push({ date: d.toISOString().split("T")[0], isWeekend: false });
+            weekdayCount++;
+        }
+    }
+    return dates;
+}
+
 function slugToName(slug) {
     return slug.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
