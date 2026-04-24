@@ -106,16 +106,17 @@ async function fetchFromGolfdigg(slug) {
 
         const html = await pageRes.text();
 
-        // 가격 파싱: "greenFeeWD":"5,500" 또는 "greenFeeWD":"650" 형태
-        const wdMatch = html.match(/"greenFeeWD"\s*:\s*"([\d,]+)"/);
-        const weMatch = html.match(/"greenFeeWE"\s*:\s*"([\d,]+)"/);
+        // 가격 파싱: \"greenFeeWD\":\"5000\" 형태 (HTML 내부 이스케이프된 JSON)
+        // 일반 따옴표와 이스케이프된 따옴표 둘 다 매칭
+        const wdMatch = html.match(/\\?"greenFeeWD\\?"\s*:\s*\\?"([\d,]+)\\?"/);
+        const weMatch = html.match(/\\?"greenFeeWE\\?"\s*:\s*\\?"([\d,]+)\\?"/);
 
         const weekday = wdMatch ? parseInt(wdMatch[1].replace(/,/g, "")) : null;
         const weekend = weMatch ? parseInt(weMatch[1].replace(/,/g, "")) : null;
 
-        // 골프장 영문명 파싱: "course":{"id":"...","name":"NIKANTI GOLF CLUB",...
+        // 골프장 영문명 파싱: \"course\":{\"id\":\"...\",\"name\":\"ALPINE GOLF CLUB\",...
         let name = slugToName(slug);
-        const courseNameMatch = html.match(/"course"\s*:\s*\{[^}]*?"name"\s*:\s*"([^"]+)"/);
+        const courseNameMatch = html.match(/\\?"course\\?"\s*:\s*\{[^}]*?\\?"name\\?"\s*:\s*\\?"([^"\\]+)\\?"/);
         if (courseNameMatch) {
             const raw = courseNameMatch[1].trim();
             name = raw === raw.toUpperCase()
