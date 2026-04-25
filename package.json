@@ -1,0 +1,10 @@
+{
+  "name": "thaigolfpromo",
+  "version": "1.2.0",
+  "description": "Thai Golf Promotion Parser for KakaoTalk Bot",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "@supabase/supabase-js": "^2.49.0",
+    "dotenv": "^17.4.1"
+  }
+}
