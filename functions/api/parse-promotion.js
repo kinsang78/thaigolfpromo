@@ -123,9 +123,12 @@ export async function onRequestPost(context) {
       lines.push("");
       lines.push("⚠️ 마스터 매칭 실패 " + results.unmatched.length + "건 (운영자 수동 보정 대기)");
       results.unmatched.forEach(u => {
-        lines.push("- " + (u.golf_course || "?") + (u.golf_course_en ? " / " + u.golf_course_en : ""));
+        const label = u.golf_course
+          || u.golf_course_en
+          || ("(이름 추출 실패) " + utterance.substring(0, 25) + "...");
+        lines.push("- " + label);
       });
-      lines.push("→ 골프장 DB에 없거나 명칭이 너무 달라서 매칭 못 함");
+      lines.push("→ 마스터 DB에 없는 골프장입니다. 명칭 확인 후 운영자가 수동 등록합니다.");
     }
     if (lines.length === 0) return jsonResponse(kakaoResponse("저장할 프로모션을 찾지 못했습니다."));
     return jsonResponse(kakaoResponse(lines.join("\n")));
@@ -218,8 +221,11 @@ function buildSystemPrompt(today, masterListText) {
     "    오전/오후 동일하면 weekday/weekend로 통합.",
     '12. **전화번호 추출 강화**: "전화/예약/문의/연락처/Tel" 다음에 오는 숫자 패턴은 contact_phone에 반드시 넣으세요.',
     '    예시: "전화: 02-549-1555" → contact_phone: "02-549-1555"',
-    '    국제번호 형식(+66, 0066)도 인식하세요.',
+    '    국제번호 형식(+66, 0066)도 인식하세요.',    
     "13. 프로모션이 아닌 일반 대화는 빈 배열 [] 반환. 단, 가격(숫자+바트/원)이 있으면 반드시 프로모션 처리.",
+    "14. **골프장명 보존 원칙**: 사용자가 입력한 한글 골프장명은 마스터 목록에 없더라도 절대 null로 두지 말고 입력 그대로 golf_course에 넣으세요.",
+    "    영문명을 모를 때만 golf_course_en을 null로 두세요. 한글명은 항상 사용자 표현 그대로 보존합니다.",
+    "    이 정책은 운영자가 추후 매칭 실패 케이스를 추적할 수 있게 하기 위함입니다.",
   ].join("\n");
 }
 
@@ -394,14 +400,15 @@ async function cleanupExpired(supabase) {
 }
 
 async function saveWithDedup(supabase, promo, rawMessage, userId) {
-  const courseName = promo.golf_course;
-  if (!courseName) return { action: "skipped" };
-
-  // unmatched는 dedup 검사 없이 바로 저장 (golf_course_id NULL)
+  // 1. 매칭 실패는 최우선 처리 (golf_course null이어도 raw_message는 DB에 보존)
   if (promo._unmatched) {
     const result = await insertNew(supabase, promo, rawMessage, userId);
     return { action: result.action === "saved" ? "unmatched" : "skipped" };
   }
+
+  // 2. 매칭됐는데 골프장명이 비었으면 skip
+  const courseName = promo.golf_course;
+  if (!courseName) return { action: "skipped" };
 
   const searchResult = await supabase.from("promotions").select("*")
     .eq("status", "active").eq("golf_course_id", promo.golf_course_id);
