@@ -4,13 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 // ====================================================================
 // Cloudflare Pages Functions 진입점
 // 카카오 i 오픈빌더 webhook (POST 전용)
-//
-// v6 변경 포인트 (2026-04-25):
-// - 인도네시아/IDR 분기 완전 제거 → 태국 전용
-// - correctWithMaster: 영문 정규화 매칭 추가 (중복 행 재발 방지)
-// - 매칭 실패 시 master 신규 INSERT 금지 → 수동 보정 흐름
-// - contact_phone → golf_courses.phone 자동 sync (master에 phone NULL일 때)
-// - 응답에 "매칭 실패" 케이스 명시
 // ====================================================================
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -47,8 +40,13 @@ export async function onRequestPost(context) {
     const COURSE_MASTER = await loadCourseMaster(supabase);
     const masterListText = buildMasterListText(COURSE_MASTER);
 
-    const today = new Date().toISOString().split("T")[0];
-    const SYSTEM_PROMPT = buildSystemPrompt(today, masterListText);
+    // 날짜 계산 로직 추가 (오늘, 당월 1일, 당월 말일)
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split("T")[0];
+
+    const SYSTEM_PROMPT = buildSystemPrompt(today, firstDay, lastDay, masterListText);
 
     console.log("=== 파싱 시작 ===", utterance.substring(0, 80));
 
@@ -82,7 +80,7 @@ export async function onRequestPost(context) {
       ));
     }
 
-    // 마스터 매칭 (강화된 알고리즘)
+    // 마스터 매칭
     promotions = promotions.map(p => correctWithMaster(p, COURSE_MASTER));
 
     const results = { saved: [], updated: [], skipped: [], unmatched: [] };
@@ -90,7 +88,7 @@ export async function onRequestPost(context) {
       const saveResult = await saveWithDedup(supabase, promo, utterance, userId);
       results[saveResult.action].push(promo);
 
-      // master에 phone 자동 sync (매칭됐고 phone 있고 master에 없을 때만)
+      // master에 phone 자동 sync
       if (promo.golf_course_id && promo.contact_phone) {
         await syncPhoneToMaster(supabase, promo).catch(e =>
           console.error("phone sync 실패:", e.message)
@@ -98,7 +96,6 @@ export async function onRequestPost(context) {
       }
     }
 
-    // 만료 정리는 백그라운드
     context.waitUntil(
       cleanupExpired(supabase).catch(e => console.error("만료 정리 실패:", e.message))
     );
@@ -123,9 +120,7 @@ export async function onRequestPost(context) {
       lines.push("");
       lines.push("⚠️ 마스터 매칭 실패 " + results.unmatched.length + "건 (운영자 수동 보정 대기)");
       results.unmatched.forEach(u => {
-        const label = u.golf_course
-          || u.golf_course_en
-          || ("(이름 추출 실패) " + utterance.substring(0, 25) + "...");
+        const label = u.golf_course || u.golf_course_en || ("(이름 추출 실패) " + utterance.substring(0, 25) + "...");
         lines.push("- " + label);
       });
       lines.push("→ 마스터 DB에 없는 골프장입니다. 명칭 확인 후 운영자가 수동 등록합니다.");
@@ -162,11 +157,13 @@ function kakaoResponse(text) {
 }
 
 // ====================================================================
-// 시스템 프롬프트 (태국 전용)
+// 시스템 프롬프트 (태국 전용, 강화된 규칙 적용)
 // ====================================================================
-function buildSystemPrompt(today, masterListText) {
+function buildSystemPrompt(today, firstDay, lastDay, masterListText) {
   return [
-    "오늘 날짜: " + today,
+    `오늘 날짜: ${today}`,
+    `이번 달 시작: ${firstDay}`,
+    `이번 달 마감: ${lastDay}`,
     "당신은 태국 골프장 프로모션 메시지 파싱 전문가입니다.",
     "사용자가 보내는 메시지에서 아래 정보를 JSON 배열로 추출하세요.",
     "",
@@ -176,8 +173,8 @@ function buildSystemPrompt(today, masterListText) {
     '  "golf_course_en": "골프장명 (영문)",',
     '  "country": "태국",',
     '  "region": "세부 지역명 (방콕/파타야/후아힌/카오야이/푸켓/치앙마이 등)",',
-    '  "start_date": "YYYY-MM-DD 또는 null",',
-    '  "end_date": "YYYY-MM-DD 또는 null",',
+    '  "start_date": "YYYY-MM-DD",',
+    '  "end_date": "YYYY-MM-DD",',
     '  "price_type": "green_fee_only | all_inclusive | package",',
     '  "green_fee": { "weekday": 2000, "weekend": 3000 },',
     '  "currency": "THB 또는 KRW",',
@@ -198,42 +195,25 @@ function buildSystemPrompt(today, masterListText) {
     "",
     masterListText,
     "",
-    "=== 가격 분류 규칙 (price_type) ===",
-    '1. "all_inclusive": "그린피, 캐디, 카트 포함" 또는 "올인클루시브/올인" 명시',
-    '2. "green_fee_only": 그린피만 표기, 캐디/카트 별도/불포함/추가, 또는 포함사항 미언급 (기본값)',
-    '3. "package": 숙박+식사 포함 패키지',
-    '4. 확실하지 않으면 "green_fee_only"로 설정하고 conditions에 "포함사항 미확인" 추가',
+    "=== 데이터 추출 규칙 및 통제 사항 (매우 중요) ===",
+    `1. **기간 기본값**: 텍스트에 기간(날짜)이 전혀 명시되지 않은 경우, 무조건 이번 달 전체(${firstDay} ~ ${lastDay})로 설정하세요. start_date와 end_date를 절대로 null로 두지 마세요.`,
+    "2. **대회/행사(단일 날짜)**: 텍스트에 '대회', '토너먼트', '샷건', '시상', '행사' 등의 키워드가 있다면, 이는 하루짜리 단일 행사입니다. 반드시 start_date와 end_date를 행사일 하루로 똑같이 설정하고, conditions 맨 앞에 '[대회]' 태그를 붙이세요.",
     "",
-    "=== 기타 규칙 ===",
-    "1. 반드시 JSON 배열만 출력. 설명·주석·코드블록 마크다운 금지.",
-    "2. 만원/원 = KRW, 바트 = THB",
-    "3. 여러 골프장이면 배열로 모두 추출",
-    '4. region은 구체적 지역명만. "태국 방콕" 금지. "방콕"으로.',
-    "5. 연도 없이 월만 있으면 가장 가까운 해당 월로 추정",
-    "6. 그룹 가격 처리: \"4인그룹 13000바트\" 같이 N인 기준 총액인 경우,",
-    '   green_fee에는 1인당 가격을, conditions에 "N인그룹 기준 (총 XX바트)" 명시.',
-    '   예: 4인그룹 13000바트 → green_fee: {"default": 3250}, conditions: "4인그룹 기준 (총 13,000바트)"',
-    "7. 부가 혜택(기념품, 모자, 우산, 음료 등)은 conditions에 요약.",
-    "8. 샷건/티오프 시간이 명시되면 conditions에 포함. 예: \"샷건 12시\"",
-    "9. 하루짜리 이벤트는 start_date == end_date.",
-    '10. 대회/토너먼트 감지: 샷건/토너먼트/대회/상금/시상/마라톤/참가비 단어가 있으면 conditions 맨 앞에 "[대회]" 태그.',
-    "11. 시간대별 가격: weekday_morning, weekday_afternoon, weekend_morning, weekend_afternoon.",
-    "    오전/오후 동일하면 weekday/weekend로 통합.",
-    '12. **전화번호 추출 강화**: "전화/예약/문의/연락처/Tel" 다음에 오는 숫자 패턴은 contact_phone에 반드시 넣으세요.',
-    '    예시: "전화: 02-549-1555" → contact_phone: "02-549-1555"',
-    '    국제번호 형식(+66, 0066)도 인식하세요.',    
-    "13. 프로모션이 아닌 일반 대화는 빈 배열 [] 반환. 단, 가격(숫자+바트/원)이 있으면 반드시 프로모션 처리.",
-    "14. **골프장명 보존 원칙**: 사용자가 입력한 한글 골프장명은 마스터 목록에 없더라도 절대 null로 두지 말고 입력 그대로 golf_course에 넣으세요.",
-    "    영문명을 모를 때만 golf_course_en을 null로 두세요. 한글명은 항상 사용자 표현 그대로 보존합니다.",
-    "    이 정책은 운영자가 추후 매칭 실패 케이스를 추적할 수 있게 하기 위함입니다.",
+    "3. **가격 키(Key) 엄격 통제**: green_fee 내부의 키는 **반드시 아래 허용된 키워드만 사용**해야 합니다. '2pm_onwards' 같이 임의의 키를 절대 새로 만들지 마세요.",
+    "  - 허용 키: default, weekday, weekend, morning, afternoon, weekday_morning, weekday_afternoon, weekend_morning, weekend_afternoon",
+    "  - 역할 분리(있을 경우): member, guest, visitor (예: member_weekday, guest_weekend)",
+    "  - '카트 별도' 같은 조건은 절대 키로 만들지 말고 conditions에 적으세요. (weekday_cart 금지)",
+    "  - 텍스트에 시간대가 여러 개 나열될 경우(예: 6시 이후 2000, 2시 이후 1500), 문맥상 빠른 시간은 'morning', 오후 시간은 'afternoon'으로 해석하세요. 구체적인 시간별 복잡한 요금(예: 4시 이후 1100바트)은 대표 가격만 키에 넣고, 자세한 내용은 conditions에 '시간대별 그린피 (6시 2000, 2시 1500, 4시 1100바트)'와 같이 문장으로 요약하세요.",
+    "",
+    "4. **가격 분류(price_type)**: 올인/올인클루시브/카트캐디 포함 명시 시 'all_inclusive', 숙박 명시 시 'package', 그 외나 불확실하면 'green_fee_only'로 설정.",
+    "5. **전화번호**: '전화/예약/문의' 다음 숫자 패턴(+66, 0066 포함)은 반드시 contact_phone에 저장.",
+    "6. **골프장명 보존**: 한글명은 무조건 보존(마스터에 없어도 사용자가 입력한 대로). 영문명은 모를 때만 null.",
+    "7. **응답 형식**: 어떤 경우에도 설명, 주석, 마크다운 코드블록(`) 없이 순수한 JSON 배열만 출력하세요.",
   ].join("\n");
 }
 
 // ====================================================================
-// 골프장 마스터 로딩 (태국 전용)
-// 두 개의 인덱스를 만들어 매칭 효율 극대화:
-//   byKo:    한글명 → master
-//   byEnKey: 영문 정규화 키 → master (NEW)
+// 이하 기존 함수들 (변경 없음)
 // ====================================================================
 async function loadCourseMaster(supabase) {
   const { data, error } = await supabase
@@ -263,19 +243,16 @@ async function loadCourseMaster(supabase) {
     }
   });
 
-  console.log(`마스터 로딩: byKo ${Object.keys(byKo).length}개, byEnKey ${Object.keys(byEnKey).length}개`);
   return { byKo, byEnKey, raw: data };
 }
 
 function buildMasterListText(COURSE_MASTER) {
-  // 한글 있는 골프장 우선 (한글-영문 매핑 명시)
   const lines = [];
   const seen = new Set();
   for (const [ko, m] of Object.entries(COURSE_MASTER.byKo)) {
     lines.push(`${ko} = ${m.en || "?"} | ${m.region || "?"}`);
     if (m.en) seen.add(normalizeNameKey(m.en));
   }
-  // 한글 없는 골프장 (영문명만 안내 — 챗봇이 한글명 만들어내지 않게)
   for (const [enKey, m] of Object.entries(COURSE_MASTER.byEnKey)) {
     if (seen.has(enKey)) continue;
     lines.push(`(한글미정) = ${m.en} | ${m.region || "?"}`);
@@ -283,9 +260,6 @@ function buildMasterListText(COURSE_MASTER) {
   return lines.join("\n");
 }
 
-// ====================================================================
-// 파싱 보조
-// ====================================================================
 function isLikelyPromotion(text) {
   if (!text || text.trim().length < 10) return false;
   const keywords = [
@@ -305,24 +279,14 @@ function isLikelyPromotion(text) {
   return false;
 }
 
-// ====================================================================
-// 마스터 매칭 (강화 알고리즘)
-//   1) 한글 정확 일치
-//   2) 영문 정규화 정확 일치 ← NEW
-//   3) 한글 부분 문자열 (3자 이상)
-//   4) 영문 정규화 부분 문자열 (5자 이상)
-//   5) 실패 → master에 새 행 INSERT 안 함, _unmatched 플래그
-// ====================================================================
 function correctWithMaster(promo, COURSE_MASTER) {
   const koName = promo.golf_course;
   const enName = promo.golf_course_en;
 
-  // 1) 한글 정확 일치
   if (koName && COURSE_MASTER.byKo[koName]) {
     return applyMaster(promo, COURSE_MASTER.byKo[koName]);
   }
 
-  // 2) 영문 정규화 정확 일치
   if (enName) {
     const enKey = normalizeNameKey(enName);
     if (enKey && COURSE_MASTER.byEnKey[enKey]) {
@@ -330,7 +294,6 @@ function correctWithMaster(promo, COURSE_MASTER) {
     }
   }
 
-  // 3) 한글 부분 문자열 (양방향, 3자 이상)
   if (koName) {
     let bestKey = null, bestLen = 0;
     for (const key of Object.keys(COURSE_MASTER.byKo)) {
@@ -341,12 +304,11 @@ function correctWithMaster(promo, COURSE_MASTER) {
       }
     }
     if (bestKey && bestLen >= 3) {
-      promo.golf_course = bestKey;  // 표준 한글명으로 교체
+      promo.golf_course = bestKey; 
       return applyMaster(promo, COURSE_MASTER.byKo[bestKey]);
     }
   }
 
-  // 4) 영문 정규화 부분 문자열 (양방향, 5자 이상)
   if (enName) {
     const enKey = normalizeNameKey(enName);
     if (enKey && enKey.length >= 5) {
@@ -364,8 +326,7 @@ function correctWithMaster(promo, COURSE_MASTER) {
     }
   }
 
-  // 5) 매칭 실패
-  console.log(`[매칭실패] ko="${koName}" en="${enName}" → master에 없음, golf_course_id NULL로 저장`);
+  console.log(`[매칭실패] ko="${koName}" en="${enName}" → master에 없음`);
   promo._unmatched = true;
   cleanRegion(promo);
   return promo;
@@ -389,9 +350,6 @@ function cleanRegion(promo) {
   else if (promo.region.indexOf("태국 ") === 0) promo.region = promo.region.replace("태국 ", "");
 }
 
-// ====================================================================
-// DB 저장
-// ====================================================================
 async function cleanupExpired(supabase) {
   const today = new Date().toISOString().split("T")[0];
   const result = await supabase.from("promotions").delete()
@@ -400,13 +358,11 @@ async function cleanupExpired(supabase) {
 }
 
 async function saveWithDedup(supabase, promo, rawMessage, userId) {
-  // 1. 매칭 실패는 최우선 처리 (golf_course null이어도 raw_message는 DB에 보존)
   if (promo._unmatched) {
     const result = await insertNew(supabase, promo, rawMessage, userId);
     return { action: result.action === "saved" ? "unmatched" : "skipped" };
   }
 
-  // 2. 매칭됐는데 골프장명이 비었으면 skip
   const courseName = promo.golf_course;
   if (!courseName) return { action: "skipped" };
 
@@ -487,10 +443,6 @@ async function insertNew(supabase, promo, rawMessage, userId) {
   return { action: "saved" };
 }
 
-// ====================================================================
-// phone master sync (NEW)
-// 챗봇 prom의 contact_phone을 master에 자동 반영 (master가 NULL일 때만)
-// ====================================================================
 async function syncPhoneToMaster(supabase, promo) {
   const courseId = promo.golf_course_id;
   const phone = promo.contact_phone;
@@ -501,23 +453,15 @@ async function syncPhoneToMaster(supabase, promo) {
     .select("phone")
     .eq("id", courseId)
     .single();
-  if (error || !data || data.phone) return;  // 이미 phone 있으면 skip
+  if (error || !data || data.phone) return;
 
-  const result = await supabase.from("golf_courses").update({
+  await supabase.from("golf_courses").update({
     phone: phone,
     phone_source: "kakao_promo",
     phone_updated_at: new Date().toISOString(),
   }).eq("id", courseId);
-  if (result.error) {
-    console.error("phone sync 에러:", result.error.message);
-  } else {
-    console.log(`[phone sync] course ${courseId}에 ${phone} 반영`);
-  }
 }
 
-// ====================================================================
-// 유틸
-// ====================================================================
 function datesOverlap(existing, incoming) {
   if (!existing.start_date && !incoming.start_date) return true;
   if (!existing.start_date || !incoming.start_date) return true;
@@ -563,8 +507,6 @@ function formatSummary(p) {
   return text;
 }
 
-// 영문 골프장명 정규화 키 (소문자 + 영숫자만)
-// "Bangkok Golf Club" / "BANGKOK GOLF CLUB" / "bangkok-golf-club" → "bangkokgolfclub"
 function normalizeNameKey(s) {
   return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
