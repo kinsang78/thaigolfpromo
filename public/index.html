@@ -39,7 +39,6 @@
   .card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
   .card-header-left{flex:1;min-width:0}
   .course-name{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-0.3px;line-height:1.3}
-  .course-name .cc{font-size:11px;font-weight:600;color:var(--text3);margin-right:4px}
   .course-name .promo-icon{margin-right:3px}
   .course-sub{font-size:12px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
@@ -52,8 +51,8 @@
   .normal-price-note{font-size:11px;color:var(--text3);margin-top:4px}
   .normal-price-note .source-tag{font-weight:500;color:var(--text3)}
 
-  .normal-action{padding:0 16px 12px}
-  .normal-action a{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:#fff}
+  .normal-action{padding:0 16px 12px;display:flex;justify-content:flex-end}
+  .normal-action a, .normal-action span.action-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;padding:6px 10px;border:1px solid var(--accent);border-radius:8px;background:#fff}
   .normal-action a:active{background:#F0F8F0}
   .normal-action .icon{width:13px;height:13px}
 
@@ -151,14 +150,13 @@
       </select>
       <select class="sort-select" id="sortSelect" onchange="render()">
         <option value="recommended">추천순</option>
-        <option value="tournament">토너먼트·대회</option>
-        <option value="nearby">가까운 순</option>
         <option value="price_low">가격 낮은순</option>
-        <option value="ending">마감 임박순</option>
+        <option value="nearby">거리 순</option>
+        <option value="name">이름 순</option>
       </select>
       <div class="control-spacer"></div>
-      <div class="toggle-switch" id="promoToggle" onclick="togglePromoOnly()" title="프로모션만"></div>
-      <span class="toggle-label">프로모션만</span>
+      <div class="toggle-switch" id="tournamentToggle" onclick="toggleTournamentOnly()" title="대회만"></div>
+      <span class="toggle-label">대회만</span>
     </div>
   </div>
   <div id="content">
@@ -168,7 +166,7 @@
   </div>
   <div class="footer">
     가격 정보는 참고용이며 실제와 다를 수 있습니다<br>
-    © 2025 PT. Orangutan Golf Travel. All rights reserved.
+    © 2026 Kinsang Lab. All rights reserved.
   </div>
 </div>
 <button class="refresh-btn" onclick="loadData()" title="새로고침">
@@ -180,7 +178,7 @@ var SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 var GOLFDIGG_BASE="https://golfdigg.com";
 
 var allCourses=[], allPromotions=[], mergedData=[];
-var activeRegion="전체", promoOnly=false, expandedCards={};
+var activeRegion="전체", tournamentOnly=false, expandedCards={};
 var userLat=null,userLng=null;
 
 // ====================================================================
@@ -280,10 +278,10 @@ function mergeData(){
   });
 }
 
-function togglePromoOnly(){
-  promoOnly=!promoOnly;
-  var el=document.getElementById("promoToggle");
-  if(promoOnly) el.classList.add("on"); else el.classList.remove("on");
+function toggleTournamentOnly(){
+  tournamentOnly=!tournamentOnly;
+  var el=document.getElementById("tournamentToggle");
+  if(tournamentOnly) el.classList.add("on"); else el.classList.remove("on");
   render();
 }
 
@@ -374,7 +372,7 @@ function render(){
   var items=mergedData.slice();
 
   if(activeRegion!=="전체") items=items.filter(function(d){return d.region===activeRegion});
-  if(promoOnly) items=items.filter(function(d){return d.promos.length>0});
+  if(tournamentOnly) items=items.filter(function(d){return hasTournamentPromo(d)});
 
   if(q) items=items.filter(function(d){
     return d.displayName.toLowerCase().indexOf(q)!==-1 || d.displayNameEn.toLowerCase().indexOf(q)!==-1;
@@ -382,39 +380,39 @@ function render(){
 
   var sort=document.getElementById("sortSelect").value;
   if(sort==="recommended"){
+    // 2-bucket: 프로모션 有(마감임박순→가격순) → 프로모션 無(이름순)
     items.sort(function(a,b){
-      var ba=getRecommendBucket(a), bb=getRecommendBucket(b);
-      if(ba!==bb) return ba-bb;
-      if(ba===1) return getEarliestEnding(a)-getEarliestEnding(b);
-      if(ba===2) return getMinPromoPrice(a)-getMinPromoPrice(b);
-      if(ba===3) return getMinNormalPrice(a)-getMinNormalPrice(b);
-      return a.displayName.localeCompare(b.displayName,"ko");
-    });
-  } else if(sort==="tournament"){
-    items.sort(function(a,b){
-      var at=hasTournamentPromo(a)?0:1, bt=hasTournamentPromo(b)?0:1;
-      if(at!==bt) return at-bt;
-      var ba=getRecommendBucket(a), bb=getRecommendBucket(b);
-      if(ba!==bb) return ba-bb;
+      var ap=a.promos.length>0?0:1, bp=b.promos.length>0?0:1;
+      if(ap!==bp) return ap-bp;
+      if(ap===0){
+        var ae=getEarliestEnding(a), be=getEarliestEnding(b);
+        if(ae!==be) return ae-be;
+        return getMinPromoPrice(a)-getMinPromoPrice(b);
+      }
       return a.displayName.localeCompare(b.displayName,"ko");
     });
   } else if(sort==="price_low"){
     items.sort(function(a,b){return getMinAnyPrice(a)-getMinAnyPrice(b)});
-  } else if(sort==="ending"){
-    items.sort(function(a,b){
-      var ae=getEarliestEnding(a), be=getEarliestEnding(b);
-      if(ae===Infinity && be===Infinity) return a.displayName.localeCompare(b.displayName,"ko");
-      return ae-be;
-    });
+  } else if(sort==="name"){
+    items.sort(function(a,b){return a.displayName.localeCompare(b.displayName,"ko")});
   } else if(sort==="nearby"){
-    if(!userLat){getUserLocation();alert("위치 권한을 허용해주세요.");document.getElementById("sortSelect").value="recommended";return}
+    if(!userLat){
+      getUserLocation();
+      alert("위치 권한을 허용해주세요.");
+      document.getElementById("sortSelect").value="recommended";
+      return;
+    }
     items.sort(function(a,b){
       return calcDistance(userLat,userLng,a.latitude,a.longitude)-calcDistance(userLat,userLng,b.latitude,b.longitude);
     });
   }
 
   var promoCount=items.filter(function(d){return d.promos.length>0}).length;
-  document.getElementById("countBadge").textContent=items.length+"개 골프장"+(promoCount?" · 프로모션 "+promoCount:"");
+  var tourCount=items.filter(function(d){return hasTournamentPromo(d)}).length;
+  var badgeText=items.length+"개 골프장";
+  if(tournamentOnly && tourCount){badgeText+=" · 대회 "+tourCount;}
+  else if(promoCount){badgeText+=" · 프로모션 "+promoCount;}
+  document.getElementById("countBadge").textContent=badgeText;
 
   if(!items.length){
     document.getElementById("content").innerHTML='<div class="empty"><div class="empty-icon">&#x1F3CC;&#xFE0F;</div><div class="empty-title">결과가 없습니다</div><div class="empty-desc">'+(q?'"'+escHtml(q)+'" 검색 결과가 없습니다.':"등록된 골프장이 없어요.")+'</div></div>';
@@ -436,7 +434,7 @@ function renderCard(d,idx,q){
   h+='<div class="card-main"><div class="card-header"><div class="card-header-left">';
   h+='<div class="course-name">';
   if(hasPromo) h+='<span class="promo-icon">🏷️</span>';
-  h+='<span class="cc">TH</span>'+name+'</div>';
+  h+=name+'</div>';
   h+='<div class="course-sub">';
   if(nameEn && d.displayName!==d.displayNameEn) h+=nameEn;
   if((nameEn && d.displayName!==d.displayNameEn) && regionText) h+=' &middot; ';
