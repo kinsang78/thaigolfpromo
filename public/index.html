@@ -205,7 +205,7 @@ async function loadData(){
     var courseFields="id,name_ko,name_en,country,region,latitude,longitude,"
       +"normal_weekday_am,normal_weekday_pm,normal_weekend_am,normal_weekend_pm,"
       +"normal_price_includes,normal_price_source,normal_price_currency,"
-      +"phone,phone_source,golfdigg_slug,line_id";
+      +"phone,phone_source,golfdigg_slug,line_id,is_valid_on_golfdigg";
     var r1=await fetch(SUPABASE_URL+"/rest/v1/golf_courses?country=eq.%ED%83%9C%EA%B5%AD&order=name_en.asc&limit=500&select="+encodeURIComponent(courseFields),{
       headers:{"apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+SUPABASE_ANON_KEY}
     });
@@ -516,7 +516,10 @@ function renderNormalPrice(c){
 function renderNormalAction(c){
   var slug=c.golfdigg_slug;
   var icon='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
-  if(slug){
+  
+  if(c.is_valid_on_golfdigg === false){
+    return '<div class="normal-action"><span class="action-btn action-disabled" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;background:#F2F1EC;color:#9B9B9B;border:1px solid #E8E6E1;cursor:not-allowed;">'+icon+'Golfdigg 미지원</span></div>';
+  } else if(slug){
     return '<div class="normal-action"><a href="'+golfdiggCourseUrl(slug)+'" target="_blank" rel="noopener">'+icon+'Golfdigg에서 부킹</a></div>';
   }
   return '<div class="normal-action"><a href="'+golfdiggSearchUrl(c.name_en||c.name_ko||"")+'" target="_blank" rel="noopener">'+icon+'Golfdigg에서 검색</a></div>';
@@ -606,7 +609,11 @@ function renderPromoActions(p, d){
     html+='<span class="action-btn action-disabled">번호 확인 중</span>';
   }
 
-  if(slug){
+  var isValidOnGolfdigg = d.course ? d.course.is_valid_on_golfdigg : null;
+
+  if(isValidOnGolfdigg === false){
+    html+='<span class="action-btn action-disabled" style="cursor:not-allowed;">'+linkIcon+'Golfdigg 미지원</span>';
+  } else if(slug){
     html+='<a href="'+golfdiggCourseUrl(slug)+'" target="_blank" rel="noopener" class="action-btn action-link">'+linkIcon+'Golfdigg</a>';
   } else if(!phone){
     var nameForSearch=d.course?(d.course.name_en||d.course.name_ko):(p.golf_course_en||p.golf_course||"");
